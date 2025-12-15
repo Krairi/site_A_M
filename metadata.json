@@ -1,0 +1,7 @@
+{
+  "name": "GIVD - Gestionnaire Intelligent",
+  "description": "Gestionnaire Intelligent de Vie Domestique : Stock, Recettes IA, et Budget.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
