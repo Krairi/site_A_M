@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS (CDN kept for simplicity, can be moved to PostCSS later) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -24,7 +24,7 @@
               softgray: '#F2F3F4',
               darkgray: '#D5D8DC',
               slate: {
-                850: '#1e293b' // Darker slate for dark mode bg
+                850: '#1e293b'
               }
             },
             fontFamily: {
@@ -46,12 +46,11 @@
     <style>
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #F8FAFC; /* Slate 50 */
+        background-color: #F8FAFC;
       }
       h1, h2, h3, h4, h5, h6 {
         font-family: 'Space Grotesk', sans-serif;
       }
-      /* Custom scrollbar */
       ::-webkit-scrollbar {
         width: 8px;
       }
@@ -69,19 +68,22 @@
   <script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
-    "react-router-dom": "https://esm.sh/react-router-dom@^7.10.1",
-    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
-    "recharts": "https://esm.sh/recharts@^3.6.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.3"
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.10.1",
+    "recharts": "https://esm.sh/recharts@^3.6.0",
+    "vite": "https://esm.sh/vite@^7.3.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.87.2"
   }
 }
 </script>
 </head>
   <body>
     <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
