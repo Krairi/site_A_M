@@ -83,8 +83,23 @@ export const parseReceiptWithGemini = async (imageBase64: string): Promise<Scann
   try {
     const ai = new GoogleGenAI({ apiKey: API_KEY });
     
-    // Clean base64 string if needed (remove data:image/png;base64, prefix)
-    const cleanBase64 = imageBase64.split(',')[1] || imageBase64;
+    // Safely extract mime type and data without regex capture on large string
+    let mimeType = 'image/jpeg';
+    let cleanBase64 = imageBase64;
+
+    if (imageBase64.includes(';base64,')) {
+      const parts = imageBase64.split(';base64,');
+      if (parts.length === 2) {
+         cleanBase64 = parts[1];
+         const prefix = parts[0];
+         if (prefix.startsWith('data:')) {
+            mimeType = prefix.substring(5);
+         }
+      }
+    } else if (imageBase64.startsWith('data:')) {
+        // Edge case: data url but maybe different format or no base64 tag (rare for FileReader)
+         cleanBase64 = imageBase64.split(',')[1];
+    }
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -92,7 +107,7 @@ export const parseReceiptWithGemini = async (imageBase64: string): Promise<Scann
         parts: [
           {
             inlineData: {
-              mimeType: 'image/jpeg', // Assuming jpeg for simplicity, or detect from header
+              mimeType: mimeType,
               data: cleanBase64
             }
           },
