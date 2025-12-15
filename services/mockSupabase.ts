@@ -32,7 +32,7 @@ class RealSupabaseService {
         email: user.email || '',
         name: profile?.name || user.email?.split('@')[0] || 'Utilisateur',
         foyer_id: profile?.foyer_id || user.id,
-        plan: profile?.plan || 'free',
+        plan: profile?.plan || 'family',
         diet: profile?.diet || 'Aucun',
         emailAlerts: profile?.email_alerts !== false // Default to true if undefined
       };
@@ -42,16 +42,16 @@ class RealSupabaseService {
         email: user.email || '',
         name: user.email?.split('@')[0] || 'Utilisateur',
         foyer_id: user.id,
-        plan: 'free',
+        plan: 'family',
         diet: 'Aucun',
         emailAlerts: true
       };
     }
   }
 
-  async updateUser(updates: Partial<User>): Promise<void> {
+  async updateUser(updates: Partial<User>): Promise<boolean> {
     const user = await this.getUser();
-    if (!user) return;
+    if (!user) return false;
 
     // Construct payload with fallback for required fields in case of new row creation
     const payload: any = {
@@ -73,7 +73,9 @@ class RealSupabaseService {
     if (error) {
       // Log formatted error and don't block UI
       console.warn("Supabase update warning:", JSON.stringify(error, null, 2));
+      return false;
     }
+    return true;
   }
 
   async login(email: string, password: string): Promise<User | null> {

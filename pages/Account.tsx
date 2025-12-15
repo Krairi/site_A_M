@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Save, CreditCard, Shield, Bell, Loader2, CheckCircle2 } from 'lucide-react';
+import { User, Mail, Save, CreditCard, Shield, Bell, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/mockSupabase';
 import { User as UserType } from '../types';
@@ -10,6 +10,7 @@ const Account = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
     
     // Form states
     const [name, setName] = useState('');
@@ -35,23 +36,25 @@ const Account = () => {
         if (!user) return;
         setSaving(true);
         setSuccess(false);
+        setErrorMsg(null);
         
         // Clean input
         const cleanName = name.trim();
         
         // Update user profile including all preferences
-        await supabase.updateUser({ name: cleanName, diet, emailAlerts });
+        const ok = await supabase.updateUser({ name: cleanName, diet, emailAlerts });
         
-        // Update local user state immediately for UI responsiveness
-        setUser(prev => prev ? { ...prev, name: cleanName, diet, emailAlerts } : null);
-        setName(cleanName);
-
-        // Simulate network delay for UX then show success
-        setTimeout(() => {
-            setSaving(false);
+        if (ok) {
+            // Update local user state immediately for UI responsiveness
+            setUser(prev => prev ? { ...prev, name: cleanName, diet, emailAlerts } : null);
+            setName(cleanName);
             setSuccess(true);
             setTimeout(() => setSuccess(false), 3000);
-        }, 800);
+        } else {
+            setErrorMsg("Impossible d'enregistrer. Vérifiez la connexion ou la base de données.");
+        }
+
+        setSaving(false);
     };
 
     if (loading) {
@@ -148,12 +151,17 @@ const Account = () => {
                         </h3>
                         <div className="mt-4 mb-6">
                             <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wide ${
-                                user?.plan === 'premium' ? 'bg-honey text-white' : 'bg-gray-100 text-gray-600'
+                                user?.plan === 'family' ? 'bg-honey text-white' : 
+                                user?.plan === 'premium' ? 'bg-mint text-white' : 
+                                'bg-gray-100 text-gray-600'
                             }`}>
-                                {user?.plan === 'premium' ? 'Premium' : 'Gratuit'}
+                                {user?.plan === 'family' ? 'FAMILLE' : 
+                                 user?.plan === 'premium' ? 'PREMIUM' : 'GRATUIT'}
                             </span>
                             <p className="text-xs text-gray-500 mt-2">
-                                {user?.plan === 'free' ? 'Limité à 50 produits.' : 'Produits illimités.'}
+                                {user?.plan === 'free' ? 'Limité à 50 produits.' : 
+                                 user?.plan === 'family' ? 'Produits illimités & Multi-comptes.' :
+                                 'Produits illimités.'}
                             </p>
                         </div>
                         <button 
@@ -186,6 +194,13 @@ const Account = () => {
                             Recevez un récapitulatif des produits périmés chaque lundi.
                         </p>
                     </div>
+
+                    {errorMsg && (
+                        <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm flex items-center gap-2 animate-pulse border border-red-100">
+                            <AlertCircle size={16} />
+                            {errorMsg}
+                        </div>
+                    )}
 
                     {/* Save Button */}
                     <button 

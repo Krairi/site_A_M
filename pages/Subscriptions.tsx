@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Star, Users, Package, BarChart2, Zap, ShieldCheck } from 'lucide-react';
+import { Check, Star, Users, Package, BarChart2, Zap, ShieldCheck, Loader2 } from 'lucide-react';
 import { supabase } from '../services/mockSupabase';
 import { User } from '../types';
 
@@ -11,7 +11,8 @@ const PlanCard = ({
     current = false, 
     onSelect,
     color,
-    icon: Icon
+    icon: Icon,
+    loading = false
 }: any) => (
     <div className={`relative flex flex-col p-6 rounded-3xl transition-all duration-300 ${
         recommended 
@@ -46,15 +47,16 @@ const PlanCard = ({
 
         <button 
             onClick={onSelect}
-            disabled={current}
-            className={`w-full py-3 rounded-xl font-bold transition-all ${
+            disabled={current || loading}
+            className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
                 current 
                 ? 'bg-gray-100 text-gray-400 cursor-default' 
                 : recommended
-                    ? 'bg-mint text-white hover:bg-teal-400 shadow-lg shadow-mint/30'
-                    : 'bg-gray-900 text-white hover:bg-gray-800'
+                    ? 'bg-mint text-white hover:bg-teal-400 shadow-lg shadow-mint/30 active:scale-95'
+                    : 'bg-gray-900 text-white hover:bg-gray-800 active:scale-95'
             }`}
         >
+            {loading && !current ? <Loader2 className="animate-spin w-4 h-4" /> : null}
             {current ? 'Plan Actuel' : 'Choisir ce plan'}
         </button>
     </div>
@@ -62,22 +64,40 @@ const PlanCard = ({
 
 const Subscriptions = () => {
     const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     useEffect(() => {
         supabase.getUser().then(setUser);
     }, []);
 
     const handleSelectPlan = async (plan: 'free' | 'premium' | 'family') => {
-        setLoading(true);
-        // Simulate API call
-        await supabase.updateUser({ plan });
-        const updatedUser = await supabase.getUser();
-        setUser(updatedUser);
-        setLoading(false);
+        setLoadingPlan(plan);
+        setSuccessMessage(null);
+        
+        try {
+            // Update Backend
+            await supabase.updateUser({ plan });
+            
+            // Optimistic update for immediate UI feedback
+            setUser(prev => prev ? { ...prev, plan } : null);
+            
+            // Show success
+            setSuccessMessage(`Votre abonnement ${plan.charAt(0).toUpperCase() + plan.slice(1)} est activé !`);
+            setTimeout(() => setSuccessMessage(null), 4000);
+            
+        } catch (error) {
+            console.error("Erreur changement plan", error);
+        } finally {
+            setLoadingPlan(null);
+        }
     };
 
-    if (!user) return <div className="p-12 text-center"><div className="animate-spin w-8 h-8 border-2 border-mint rounded-full border-t-transparent mx-auto"></div></div>;
+    if (!user) return (
+        <div className="min-h-[60vh] flex items-center justify-center">
+            <Loader2 className="animate-spin text-mint w-8 h-8" />
+        </div>
+    );
 
     return (
         <div className="space-y-8 animate-fade-in pb-12">
@@ -88,6 +108,12 @@ const Subscriptions = () => {
                     Changez d'offre à tout moment.
                 </p>
             </div>
+            
+            {successMessage && (
+                <div className="max-w-md mx-auto bg-green-50 text-green-700 px-4 py-3 rounded-xl text-center font-medium border border-green-200 animate-slide-up">
+                    {successMessage}
+                </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto px-4 mt-8">
                 {/* Free Plan */}
@@ -97,6 +123,7 @@ const Subscriptions = () => {
                     icon={Package}
                     color="bg-gray-400"
                     current={user.plan === 'free'}
+                    loading={loadingPlan === 'free'}
                     features={[
                         "1 Utilisateur",
                         "Jusqu'à 50 produits",
@@ -114,6 +141,7 @@ const Subscriptions = () => {
                     color="bg-mint"
                     recommended={true}
                     current={user.plan === 'premium'}
+                    loading={loadingPlan === 'premium'}
                     features={[
                         "3 Utilisateurs",
                         "Jusqu'à 500 produits",
@@ -132,6 +160,7 @@ const Subscriptions = () => {
                     icon={ShieldCheck}
                     color="bg-honey"
                     current={user.plan === 'family'}
+                    loading={loadingPlan === 'family'}
                     features={[
                         "6 Utilisateurs",
                         "Produits illimités",
@@ -143,15 +172,6 @@ const Subscriptions = () => {
                     onSelect={() => handleSelectPlan('family')}
                 />
             </div>
-
-            {loading && (
-                <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-50 flex items-center justify-center">
-                    <div className="bg-white p-6 rounded-2xl shadow-xl flex items-center gap-4">
-                        <div className="animate-spin w-6 h-6 border-2 border-mint rounded-full border-t-transparent"></div>
-                        <span className="font-medium text-gray-800">Mise à jour de votre abonnement...</span>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
