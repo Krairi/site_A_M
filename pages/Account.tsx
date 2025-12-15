@@ -36,11 +36,15 @@ const Account = () => {
         setSaving(true);
         setSuccess(false);
         
-        // Update user profile including all preferences
-        await supabase.updateUser({ name, diet, emailAlerts });
+        // Clean input
+        const cleanName = name.trim();
         
-        // Update local user state
-        setUser(prev => prev ? { ...prev, name, diet, emailAlerts } : null);
+        // Update user profile including all preferences
+        await supabase.updateUser({ name: cleanName, diet, emailAlerts });
+        
+        // Update local user state immediately for UI responsiveness
+        setUser(prev => prev ? { ...prev, name: cleanName, diet, emailAlerts } : null);
+        setName(cleanName);
 
         // Simulate network delay for UX then show success
         setTimeout(() => {
@@ -59,7 +63,7 @@ const Account = () => {
     }
 
     return (
-        <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
+        <div className="space-y-6 animate-fade-in max-w-4xl mx-auto pb-10">
             <h1 className="text-3xl font-display font-bold text-gray-900">Mon Compte</h1>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -183,6 +187,7 @@ const Account = () => {
                         </p>
                     </div>
 
+                    {/* Save Button */}
                     <button 
                         onClick={handleSave}
                         disabled={saving}

@@ -53,9 +53,12 @@ class RealSupabaseService {
     const user = await this.getUser();
     if (!user) return;
 
+    // Construct payload with fallback for required fields in case of new row creation
     const payload: any = {
         id: user.id,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        foyer_id: user.foyer_id,
+        email: user.email
     };
 
     if (updates.name !== undefined) payload.name = updates.name;
@@ -65,10 +68,11 @@ class RealSupabaseService {
 
     const { error } = await supabaseClient
       .from('profiles')
-      .upsert(payload);
+      .upsert(payload, { onConflict: 'id' });
 
     if (error) {
-      console.error("Error updating profile:", error);
+      // Log formatted error and don't block UI
+      console.warn("Supabase update warning:", JSON.stringify(error, null, 2));
     }
   }
 
