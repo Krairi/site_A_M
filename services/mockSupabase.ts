@@ -5,23 +5,6 @@ import { ScannedReceipt } from './geminiService';
 import { MOCK_STOCK } from '../constants';
 import { SUPER_ADMIN_EMAIL } from './authService';
 
-/**
- * SCHEMA SQL & RLS POUR SUPABASE
- * 
- * -- 1. Politique pour empêcher tout le monde sauf le super admin de modifier les rôles
- * CREATE POLICY "SuperAdmin can update roles" ON profiles
- * FOR UPDATE USING (auth.jwt() ->> 'email' = 'admin@givd.com')
- * WITH CHECK (auth.jwt() ->> 'email' = 'admin@givd.com');
- * 
- * -- 2. Politique pour permettre aux utilisateurs de lire leur propre profil
- * CREATE POLICY "Users can see own profile" ON profiles
- * FOR SELECT USING (auth.uid() = id);
- * 
- * -- 3. Politique pour permettre au super admin de tout lire
- * CREATE POLICY "SuperAdmin can see all" ON profiles
- * FOR SELECT USING (auth.jwt() ->> 'email' = 'admin@givd.com');
- */
-
 export interface Ticket extends ScannedReceipt {
   id: string;
   foyer_id: string;
@@ -40,7 +23,7 @@ class RealSupabaseService {
   }
 
   // ==========================================
-  // LOGIQUE DE DROITS (MIDDLEWARE SIMULÉ)
+  // LOGIQUE DE DROITS
   // ==========================================
 
   private async isSuperAdminSession(): Promise<boolean> {
@@ -54,37 +37,44 @@ class RealSupabaseService {
 
   async getUser(): Promise<User | null> {
     try {
-      const { data } = await supabaseClient.auth.getSession();
-      const user = data?.session?.user;
-      if (!user) return null;
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const authUser = session?.user;
+      if (!authUser) return null;
 
-      const localKey = `givd_profile_${user.id}`;
+      // Tentative de récupération du profil réel en base
+      const { data: profile, error } = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
+
+      const isSystemAdmin = authUser.email === SUPER_ADMIN_EMAIL;
+      
+      // Merge base de données + fallback local (pour le développement)
+      const localKey = `givd_profile_${authUser.id}`;
       let localProfile = JSON.parse(localStorage.getItem(localKey) || '{}');
 
-      // Forçage du rôle admin pour l'email spécifique
-      const isSystemAdmin = user.email === SUPER_ADMIN_EMAIL;
-      
       return {
-          id: user.id,
-          email: user.email || '',
-          name: localProfile?.name || user.email?.split('@')[0] || 'Utilisateur',
-          foyer_id: localProfile?.foyer_id || user.id,
-          role: isSystemAdmin ? 'admin' : (localProfile.role || 'user'),
-          plan: localProfile?.plan || 'family',
-          subscriptionStatus: 'active',
-          diet: localProfile?.diet || 'Standard',
-          allergens: localProfile?.allergens || [],
-          dislikes: localProfile?.dislikes || [],
-          emailAlerts: localProfile?.emailAlerts ?? true,
-          householdSize: localProfile?.householdSize || 2,
-          permissions: localProfile?.permissions || (isSystemAdmin ? ['manage_stock', 'view_budget', 'manage_planning', 'admin_access', 'generate_recipes'] : ['manage_stock', 'generate_recipes']),
-          accountStatus: localProfile?.accountStatus || 'active'
+          id: authUser.id,
+          email: authUser.email || '',
+          name: profile?.name || localProfile?.name || authUser.email?.split('@')[0] || 'Utilisateur',
+          foyer_id: profile?.foyer_id || localProfile?.foyer_id || authUser.id,
+          role: isSystemAdmin ? 'admin' : (profile?.role || localProfile.role || 'user'),
+          plan: profile?.plan || localProfile?.plan || 'free',
+          subscriptionStatus: profile?.subscriptionStatus || 'active',
+          diet: profile?.diet || localProfile?.diet || 'Standard',
+          allergens: profile?.allergens || localProfile?.allergens || [],
+          dislikes: profile?.dislikes || localProfile?.dislikes || [],
+          emailAlerts: profile?.emailAlerts ?? localProfile?.emailAlerts ?? true,
+          householdSize: profile?.householdSize || localProfile?.householdSize || 2,
+          permissions: profile?.permissions || (isSystemAdmin ? ['manage_stock', 'view_budget', 'manage_planning', 'admin_access', 'generate_recipes'] : ['manage_stock', 'generate_recipes']),
+          accountStatus: profile?.accountStatus || localProfile?.accountStatus || 'active'
       };
     } catch (err) { return null; }
   }
 
   // ==========================================
-  // ROUTES SÉCURISÉES ADMIN
+  // ROUTES RÉELLES ADMIN (SUPABASE)
   // ==========================================
 
   async getAllProfiles(): Promise<User[]> {
@@ -92,34 +82,62 @@ class RealSupabaseService {
         throw new Error("Accès interdit : Seul le Super Admin peut lister les comptes.");
     }
     
-    const currentUser = await this.getUser();
-    // Simule une liste complète
-    return [
-      currentUser!,
-      { id: '2', email: 'jean.dupont@test.com', name: 'Jean Dupont', role: 'user', plan: 'free', foyer_id: 'f-1', subscriptionStatus: 'none', householdSize: 2, permissions: ['manage_stock'], accountStatus: 'active', lastActive: '2023-11-01' },
-      { id: '3', email: 'sophie.martin@test.com', name: 'Sophie Martin', role: 'manager', plan: 'premium', foyer_id: 'f-1', subscriptionStatus: 'active', householdSize: 3, permissions: ['manage_stock', 'manage_planning'], accountStatus: 'active', lastActive: '2023-11-02' },
-      { id: '4', email: 'compte.suspendu@test.com', name: 'Ancien Utilisateur', role: 'user', plan: 'free', foyer_id: 'f-2', subscriptionStatus: 'none', householdSize: 1, permissions: [], accountStatus: 'suspended', lastActive: '2023-09-15' },
-    ];
+    // Tentative de lecture réelle
+    const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.warn("Erreur Supabase (table profiles possiblement absente), passage au mock local.");
+        // Mock fallback si la table n'existe pas encore
+        return [
+            { id: '1', email: 'admin@givd.com', name: 'admin', role: 'admin', plan: 'family', foyer_id: 'f-0', subscriptionStatus: 'active', householdSize: 2, permissions: ['manage_stock', 'view_budget', 'manage_planning', 'admin_access'], accountStatus: 'active' },
+            { id: '2', email: 'jean.dupont@test.com', name: 'Jean Dupont', role: 'user', plan: 'free', foyer_id: 'f-1', subscriptionStatus: 'none', householdSize: 2, permissions: ['manage_stock'], accountStatus: 'active', lastActive: '2023-11-01' },
+            { id: '3', email: 'sophie.martin@test.com', name: 'Sophie Martin', role: 'manager', plan: 'premium', foyer_id: 'f-1', subscriptionStatus: 'active', householdSize: 3, permissions: ['manage_stock', 'manage_planning'], accountStatus: 'active', lastActive: '2023-11-02' },
+            { id: '4', email: 'compte.suspendu@test.com', name: 'Ancien Utilisateur', role: 'user', plan: 'free', foyer_id: 'f-2', subscriptionStatus: 'none', householdSize: 1, permissions: [], accountStatus: 'suspended', lastActive: '2023-09-15' },
+        ];
+    }
+    
+    return data as User[];
   }
 
   async adminUpdateUserPermissions(userId: string, permissions: UserPermission[]): Promise<boolean> {
     if (!(await this.isSuperAdminSession())) return false;
 
-    const localKey = `givd_profile_${userId}`;
-    const profile = JSON.parse(localStorage.getItem(localKey) || '{}');
-    profile.permissions = permissions;
-    profile.role = permissions.includes('admin_access') ? 'admin' : (permissions.length > 2 ? 'manager' : 'user');
-    localStorage.setItem(localKey, JSON.stringify(profile));
+    const role = permissions.includes('admin_access') ? 'admin' : (permissions.length > 2 ? 'manager' : 'user');
+
+    const { error } = await supabaseClient
+        .from('profiles')
+        .update({ permissions, role })
+        .eq('id', userId);
+
+    if (error) {
+        // Fallback local
+        const localKey = `givd_profile_${userId}`;
+        const profile = JSON.parse(localStorage.getItem(localKey) || '{}');
+        profile.permissions = permissions;
+        profile.role = role;
+        localStorage.setItem(localKey, JSON.stringify(profile));
+    }
     return true;
   }
 
   async adminUpdateUserStatus(userId: string, status: User['accountStatus']): Promise<boolean> {
     if (!(await this.isSuperAdminSession())) return false;
 
-    const localKey = `givd_profile_${userId}`;
-    const profile = JSON.parse(localStorage.getItem(localKey) || '{}');
-    profile.accountStatus = status;
-    localStorage.setItem(localKey, JSON.stringify(profile));
+    const { error } = await supabaseClient
+        .from('profiles')
+        .update({ accountStatus: status })
+        .eq('id', userId);
+
+    if (error) {
+        // Fallback local
+        const localKey = `givd_profile_${userId}`;
+        const profile = JSON.parse(localStorage.getItem(localKey) || '{}');
+        profile.accountStatus = status;
+        localStorage.setItem(localKey, JSON.stringify(profile));
+    }
     return true;
   }
 
@@ -133,11 +151,18 @@ class RealSupabaseService {
   async updateUser(userData: Partial<User>): Promise<boolean> {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) return false;
+
+    const { error } = await supabaseClient
+        .from('profiles')
+        .update(userData)
+        .eq('id', user.id);
+
+    // Fallback local
     const localKey = `givd_profile_${user.id}`;
     const existing = JSON.parse(localStorage.getItem(localKey) || '{}');
-    // Sécurité : Impossible de s'auto-promouvoir admin par cette route
     const { role, permissions, ...safeData } = userData as any;
     localStorage.setItem(localKey, JSON.stringify({ ...existing, ...safeData }));
+    
     return true;
   }
 

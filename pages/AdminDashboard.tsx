@@ -5,12 +5,29 @@ import { supabase } from '../services/mockSupabase';
 import { User, UserPermission } from '../types';
 
 const PERMISSIONS_MAP: { id: UserPermission; label: string; icon: any; color: string }[] = [
-    { id: 'manage_stock', label: 'Gestion Stock', icon: BookOpen, color: 'text-aqua' },
-    { id: 'view_budget', label: 'Vue Budget', icon: DollarSign, color: 'text-honey' },
-    { id: 'manage_planning', label: 'Planning Repas', icon: Calendar, color: 'text-purple-500' },
-    { id: 'generate_recipes', label: 'IA Cuisine', icon: Wand2, color: 'text-mint' },
-    { id: 'admin_access', label: 'Accès Admin', icon: ShieldAlert, color: 'text-red-500' },
+    { id: 'manage_stock', label: 'STOCK', icon: BookOpen, color: 'text-aqua' },
+    { id: 'view_budget', label: 'BUDGET', icon: DollarSign, color: 'text-honey' },
+    { id: 'manage_planning', label: 'PLANNING', icon: Calendar, color: 'text-purple-500' },
+    { id: 'generate_recipes', label: 'IA', icon: Wand2, color: 'text-mint' },
+    { id: 'admin_access', label: 'ADMIN', icon: ShieldAlert, color: 'text-red-500' },
 ];
+
+const StatCard = ({ title, value, icon: Icon, color }: any) => (
+    <div className="bg-white rounded-[2.5rem] p-6 shadow-soft border border-gray-100 flex flex-col justify-between group hover:shadow-lg transition-all duration-300 h-44 relative">
+        <div className="flex justify-between items-start">
+            <div className={`p-4 rounded-2xl ${color} bg-opacity-10 shadow-sm flex items-center justify-center`}>
+                <Icon className={`${color.replace('bg-', 'text-')}`} size={28} />
+            </div>
+            <div className="bg-gray-100/60 px-3 py-1.5 rounded-full flex items-center justify-center">
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">TEMPS RÉEL</span>
+            </div>
+        </div>
+        <div className="mt-4">
+            <p className="text-gray-400 text-sm font-medium mb-1">{title}</p>
+            <h3 className="text-4xl font-display font-bold text-gray-900">{value}</h3>
+        </div>
+    </div>
+);
 
 const PermissionModal = ({ user, onClose, onUpdate }: { user: User; onClose: () => void; onUpdate: (userId: string, perms: UserPermission[]) => void }) => {
     const [selectedPerms, setSelectedPerms] = useState<UserPermission[]>(user.permissions || []);
@@ -129,109 +146,123 @@ const AdminDashboard = () => {
         u.name?.toLowerCase().includes(search.toLowerCase())
     );
 
-    if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="animate-spin text-mint" /></div>;
+    if (loading && users.length === 0) return (
+        <div className="flex h-[80vh] items-center justify-center">
+            <Loader2 className="animate-spin text-mint w-12 h-12" />
+        </div>
+    );
 
     return (
-        <div className="space-y-8 animate-fade-in pb-12">
-            <div className="flex justify-between items-end">
+        <div className="space-y-10 animate-fade-in pb-12 px-2 md:px-0">
+            {/* Header Exactly like screenshot */}
+            <div className="flex items-start justify-between">
                 <div>
                     <h1 className="text-4xl font-display font-bold text-gray-900">Administration GIVD</h1>
-                    <p className="text-gray-500 mt-2">Gestion centralisée des comptes et privilèges.</p>
+                    <p className="text-gray-500 mt-2 font-medium">Gestion centralisée des comptes et privilèges.</p>
                 </div>
-                <div className="bg-white p-1 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-1">
-                    <button onClick={loadData} className="p-3 hover:bg-gray-50 rounded-xl transition-all">
-                        <RefreshCw size={20} className="text-gray-400" />
-                    </button>
-                </div>
+                <button 
+                    onClick={loadData} 
+                    className="p-4 bg-white hover:bg-gray-50 rounded-2xl transition-all shadow-soft border border-gray-100 text-gray-400 group"
+                >
+                    <RefreshCw size={26} className="group-active:rotate-180 transition-transform duration-500" />
+                </button>
             </div>
 
-            {/* Stats Bar */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* Stats Grid Exactly like screenshot */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard title="Total Membres" value={stats.total} icon={Users} color="bg-aqua" />
                 <StatCard title="Comptes Actifs" value={stats.active} icon={UserCheck} color="bg-mint" />
                 <StatCard title="Utilisateurs Premium" value={stats.premium} icon={Star} color="bg-honey" />
                 <StatCard title="Administrateurs" value={stats.admins} icon={ShieldAlert} color="bg-gray-900" />
             </div>
 
-            {/* Search */}
+            {/* Search Input Exactly like screenshot */}
             <div className="relative">
-                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400" size={24} />
+                <div className="absolute left-7 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <Search size={26} />
+                </div>
                 <input 
                     type="text" 
                     placeholder="Filtrer par email ou nom..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-16 pr-8 py-5 bg-white border border-gray-100 rounded-[2.5rem] shadow-soft focus:outline-none focus:ring-2 focus:ring-mint/20 focus:border-mint transition-all text-lg font-medium"
+                    className="w-full pl-20 pr-10 py-6 bg-white border border-transparent rounded-[2.5rem] shadow-soft focus:outline-none focus:ring-2 focus:ring-mint/20 focus:border-mint transition-all text-xl font-medium placeholder-gray-400"
                 />
             </div>
 
-            {/* User Table */}
-            <div className="bg-white rounded-[3rem] shadow-soft border border-gray-100 overflow-hidden">
-                <table className="w-full text-left">
-                    <thead className="bg-gray-50/50 border-b border-gray-100">
-                        <tr>
-                            <th className="px-8 py-6 text-xs font-black uppercase tracking-widest text-gray-400">Utilisateur</th>
-                            <th className="px-8 py-6 text-xs font-black uppercase tracking-widest text-gray-400">Plan</th>
-                            <th className="px-8 py-6 text-xs font-black uppercase tracking-widest text-gray-400">Permissions</th>
-                            <th className="px-8 py-6 text-xs font-black uppercase tracking-widest text-gray-400 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                        {filteredUsers.map(u => (
-                            <tr key={u.id} className={`hover:bg-gray-50/30 transition-colors ${u.accountStatus === 'suspended' ? 'opacity-50' : ''}`}>
-                                <td className="px-8 py-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg ${u.role === 'admin' ? 'bg-gray-900' : 'bg-mint'}`}>
-                                            {u.name?.charAt(0) || u.email.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-gray-900">{u.name || 'Anonyme'}</p>
-                                            <p className="text-xs text-gray-400 flex items-center gap-1 font-medium"><Mail size={12}/> {u.email}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-8 py-6">
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                                        u.plan === 'free' ? 'bg-gray-100 text-gray-400' : 
-                                        u.plan === 'premium' ? 'bg-mint/10 text-mint' : 'bg-honey/10 text-honey'
-                                    }`}>
-                                        {u.plan}
-                                    </span>
-                                </td>
-                                <td className="px-8 py-6">
-                                    <div className="flex gap-1 flex-wrap max-w-[200px]">
-                                        {u.permissions?.slice(0, 3).map(p => (
-                                            <span key={p} className="bg-gray-50 text-gray-400 text-[8px] font-bold px-2 py-0.5 rounded border border-gray-100 uppercase">
-                                                {p.split('_').pop()}
-                                            </span>
-                                        ))}
-                                        {(u.permissions?.length || 0) > 3 && (
-                                            <span className="text-[8px] font-bold text-gray-300">+{u.permissions.length - 3}</span>
-                                        )}
-                                    </div>
-                                </td>
-                                <td className="px-8 py-6 text-right space-x-2">
-                                    <button 
-                                        onClick={() => setEditingUser(u)}
-                                        className="p-3 bg-gray-50 text-gray-400 hover:text-mint hover:bg-mint/10 rounded-xl transition-all border border-transparent hover:border-mint/20"
-                                        title="Modifier Droits"
-                                    >
-                                        <Settings2 size={18} />
-                                    </button>
-                                    <button 
-                                        onClick={() => handleToggleStatus(u)}
-                                        className={`p-3 rounded-xl transition-all border ${
-                                            u.accountStatus === 'suspended' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-500 border-red-100'
-                                        }`}
-                                        title={u.accountStatus === 'suspended' ? 'Réactiver' : 'Suspendre'}
-                                    >
-                                        {u.accountStatus === 'suspended' ? <UserCheck size={18} /> : <Ban size={18} />}
-                                    </button>
-                                </td>
+            {/* User Table Exactly like screenshot */}
+            <div className="bg-white rounded-[3.5rem] shadow-soft border border-gray-100 overflow-hidden mt-6">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-gray-50/30 border-b border-gray-100">
+                            <tr>
+                                <th className="px-10 py-8 text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">UTILISATEUR</th>
+                                <th className="px-10 py-8 text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">PLAN</th>
+                                <th className="px-10 py-8 text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">PERMISSIONS</th>
+                                <th className="px-10 py-8 text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 text-right">ACTIONS</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {filteredUsers.map(u => (
+                                <tr key={u.id} className={`group hover:bg-gray-50/20 transition-colors ${u.accountStatus === 'suspended' ? 'opacity-40 grayscale-[0.5]' : ''}`}>
+                                    <td className="px-10 py-8">
+                                        <div className="flex items-center gap-5">
+                                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-sm transition-transform group-hover:scale-105 ${u.role === 'admin' ? 'bg-gray-900' : 'bg-mint'}`}>
+                                                {(u.name?.charAt(0) || u.email.charAt(0)).toLowerCase()}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-gray-900 text-lg leading-tight">{u.name || 'admin'}</p>
+                                                <p className="text-xs text-gray-400 flex items-center gap-1.5 font-semibold mt-1">
+                                                    <Mail size={12} className="opacity-70" /> {u.email}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-10 py-8">
+                                        <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                                            u.plan === 'free' ? 'bg-gray-100 text-gray-400' : 
+                                            u.plan === 'premium' ? 'bg-mint/10 text-mint' : 'bg-honey/10 text-honey'
+                                        }`}>
+                                            {u.plan}
+                                        </span>
+                                    </td>
+                                    <td className="px-10 py-8">
+                                        <div className="flex gap-2 flex-wrap items-center">
+                                            {u.permissions?.slice(0, 3).map(p => (
+                                                <span key={p} className="bg-gray-50 text-gray-400 text-[10px] font-black px-3 py-1 rounded-lg border border-gray-100 uppercase tracking-tighter">
+                                                    {p.split('_').pop()?.toUpperCase()}
+                                                </span>
+                                            ))}
+                                            {(u.permissions?.length || 0) > 3 && (
+                                                <span className="text-[10px] font-bold text-gray-300 ml-1">+{u.permissions.length - 3}</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-10 py-8 text-right">
+                                        <div className="flex justify-end gap-3">
+                                            <button 
+                                                onClick={() => setEditingUser(u)}
+                                                className="p-4 bg-gray-50 text-gray-400 hover:text-aqua hover:bg-aqua/10 rounded-2xl transition-all border border-transparent hover:border-aqua/20"
+                                                title="Modifier Droits"
+                                            >
+                                                <Settings2 size={22} />
+                                            </button>
+                                            <button 
+                                                onClick={() => handleToggleStatus(u)}
+                                                className={`p-4 rounded-2xl transition-all border ${
+                                                    u.accountStatus === 'suspended' ? 'bg-green-50 text-green-600 border-green-100 hover:bg-green-100' : 'bg-red-50 text-red-500 border-red-100 hover:bg-red-100 shadow-sm'
+                                                }`}
+                                                title={u.accountStatus === 'suspended' ? 'Réactiver' : 'Suspendre'}
+                                            >
+                                                {u.accountStatus === 'suspended' ? <UserCheck size={22} /> : <Ban size={22} />}
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {editingUser && (
@@ -244,20 +275,5 @@ const AdminDashboard = () => {
         </div>
     );
 };
-
-const StatCard = ({ title, value, icon: Icon, color }: any) => (
-    <div className="bg-white p-6 rounded-[2rem] shadow-soft border border-gray-100 flex flex-col justify-between group hover:shadow-lg transition-all duration-300">
-        <div className="flex justify-between items-start mb-4">
-            <div className={`p-4 rounded-2xl ${color} bg-opacity-10 shadow-inner`}>
-                <Icon className={`${color.replace('bg-', 'text-')}`} size={24} />
-            </div>
-            <div className="bg-gray-50 text-[10px] font-black uppercase px-2 py-1 rounded-lg text-gray-400">Temps Réel</div>
-        </div>
-        <div>
-            <p className="text-gray-400 text-sm font-medium mb-1">{title}</p>
-            <h3 className="text-3xl font-display font-bold text-gray-900">{value}</h3>
-        </div>
-    </div>
-);
 
 export default AdminDashboard;
