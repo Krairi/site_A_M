@@ -1,7 +1,8 @@
 {
-  "name": "GIVD - Gestionnaire Intelligent",
-  "description": "Gestionnaire Intelligent de Vie Domestique : Stock, Recettes IA, et Budget.",
+  "name": "Domy - Gestionnaire Intelligent",
+  "description": "Domy : Gestionnaire Intelligent de Vie Domestique. Stock, Recettes IA, et Budget simplifiés.",
   "requestFramePermissions": [
+    "camera",
     "microphone"
   ]
 }

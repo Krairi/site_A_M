@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { supabase } from '../services/mockSupabase';
-import { APP_NAME } from '../constants';
+import Logo from '../components/Logo';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -28,14 +29,17 @@ const Auth = () => {
         if (session) {
             navigate('/');
         } else {
-            // No session means email confirmation is likely required
-            setSuccessMsg("Compte créé ! Veuillez vérifier vos emails pour confirmer votre inscription avant de vous connecter.");
-            setIsLogin(true); // Switch back to login view
+            setSuccessMsg("Compte créé ! Veuillez vérifier vos emails avant de vous connecter.");
+            setIsLogin(true);
         }
       }
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Une erreur est survenue.");
+      let message = err.message || "Une erreur est survenue.";
+      if (message.includes("Invalid login credentials")) {
+        message = "Identifiants incorrects.";
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -49,44 +53,45 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-softgray p-4">
-      <div className="bg-white w-full max-w-md p-8 rounded-3xl shadow-soft border border-gray-100 text-center">
-        <div className="w-16 h-16 bg-mint rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-glow">
-          <Sparkles className="text-white w-8 h-8" />
+      <div className="bg-white w-full max-w-md p-10 rounded-[3rem] shadow-soft border border-gray-100 text-center">
+        <div className="flex justify-center mb-10">
+          <Logo size="lg" />
         </div>
-        <h1 className="text-3xl font-display font-bold text-gray-900 mb-2">
-            {isLogin ? `Bienvenue sur ${APP_NAME}` : 'Créer un foyer'}
+        
+        <h1 className="text-2xl font-display font-bold text-gray-900 mb-2">
+            {isLogin ? `Ravi de vous revoir` : 'Créer un foyer'}
         </h1>
-        <p className="text-gray-500 mb-8">
-            {isLogin ? 'Votre gestionnaire de vie domestique intelligent.' : 'Commencez à gérer votre maison simplement.'}
+        <p className="text-gray-500 mb-8 text-sm">
+            Simplifiez votre quotidien dès maintenant.
         </p>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-xl flex items-center gap-2 text-left animate-pulse">
-            <AlertCircle size={16} className="shrink-0" />
-            {error}
+          <div className="mb-6 p-4 bg-red-50 text-red-600 text-sm rounded-2xl flex items-center gap-2 text-left border border-red-100 animate-shake">
+            <AlertCircle size={18} className="shrink-0" />
+            <span className="font-medium">{error}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="mb-4 p-3 bg-green-50 text-green-600 text-sm rounded-xl text-left">
+          <div className="mb-6 p-4 bg-green-50 text-green-600 text-sm rounded-2xl text-left border border-green-100">
             {successMsg}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-left">
+        <form onSubmit={handleSubmit} className="space-y-5 text-left">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Email</label>
             <input 
                 type="email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="votre@email.com"
                 required
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-mint/50"
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-mint/30 focus:bg-white transition-all font-medium"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Mot de passe</label>
             <input 
                 type="password" 
                 value={password}
@@ -94,21 +99,21 @@ const Auth = () => {
                 placeholder="••••••••"
                 required
                 minLength={6}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-mint/50"
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-mint/30 focus:bg-white transition-all font-medium"
             />
           </div>
           <button 
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-mint hover:bg-teal-400 text-white font-bold rounded-xl shadow-lg shadow-mint/30 transition-all active:scale-95 mt-4 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full py-5 bg-mint hover:bg-teal-400 text-white font-bold rounded-2xl shadow-xl shadow-mint/30 transition-all active:scale-95 mt-4 flex items-center justify-center gap-3 disabled:opacity-70 text-lg"
           >
-            {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : (isLogin ? 'Se connecter' : 'S\'inscrire')}
+            {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : (isLogin ? 'Se connecter' : 'C\'est parti !')}
           </button>
         </form>
         
-        <p className="mt-6 text-sm text-gray-400">
-          {isLogin ? 'Pas encore de compte ?' : 'Déjà un compte ?'} <span onClick={toggleMode} className="text-aqua font-medium cursor-pointer hover:underline select-none">
-            {isLogin ? 'Créer un foyer' : 'Se connecter'}
+        <p className="mt-8 text-sm text-gray-400 font-medium">
+          {isLogin ? 'Pas encore de compte ?' : 'Déjà membre ?'} <span onClick={toggleMode} className="text-aqua font-bold cursor-pointer hover:underline select-none ml-1">
+            {isLogin ? 'Rejoindre l\'aventure' : 'Se connecter'}
           </span>
         </p>
       </div>

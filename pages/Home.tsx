@@ -1,5 +1,6 @@
+
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, AlertTriangle, Package, ChefHat, Plus } from 'lucide-react';
+import { ArrowRight, AlertTriangle, Package, ChefHat, Plus, Clock, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../services/mockSupabase';
 import { Product, User } from '../types';
@@ -21,40 +22,17 @@ const StatCard = ({ title, value, icon: Icon, colorClass, link, alert = false }:
   </Link>
 );
 
-const ProductRow = ({ product }: { product: Product }) => {
-  const isLowStock = product.quantity <= product.minThreshold;
-  const isExpiring = product.expiryDate ? new Date(product.expiryDate) <= new Date(new Date().setDate(new Date().getDate() + 3)) : false;
-
-  return (
-    <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
-      <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center text-xl">
-          {product.category === 'Frais' ? '🥛' : product.category === 'Légumes' ? '🥦' : '📦'}
-        </div>
-        <div>
-          <p className="font-semibold text-gray-800">{product.name}</p>
-          <div className="flex gap-2 text-xs text-gray-500">
-             <span>{product.quantity} {product.unit}</span>
-             <span>•</span>
-             <span>{product.category}</span>
-          </div>
-        </div>
-      </div>
-      <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
-        isLowStock || isExpiring ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'
-      }`}>
-        {isExpiring ? (
-            <>
-             <AlertTriangle size={12} /> Expire bientôt
-            </>
-        ) : isLowStock ? (
-            <>
-             <Package size={12} /> Stock bas
-            </>
-        ) : 'OK'}
-      </div>
-    </div>
-  );
+const getCategoryIcon = (category: string) => {
+    switch (category) {
+        case 'Fruits & Légumes': return '🥦';
+        case 'Viandes & Poissons': return '🥩';
+        case 'Produits Laitiers': return '🥛';
+        case 'Épicerie & Conserves': return '🍝';
+        case 'Boissons': return '🧃';
+        case 'Surgelés': return '❄️';
+        case 'Hygiène & Maison': return '🧼';
+        default: return '📦';
+    }
 };
 
 const Home = () => {
@@ -62,6 +40,7 @@ const Home = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [alertCount, setAlertCount] = useState(0);
+  const [urgentItems, setUrgentItems] = useState<Product[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -72,11 +51,18 @@ const Home = () => {
       setStock(stockData);
       setUser(userData);
       
-      // Calcul des alertes (Stock faible OU Peremption dans les 3 jours)
       const now = new Date();
       const threeDaysFromNow = new Date();
       threeDaysFromNow.setDate(now.getDate() + 3);
 
+      const expiringSoon = stockData.filter(p => {
+        if (!p.expiryDate) return false;
+        const exp = new Date(p.expiryDate);
+        return exp <= threeDaysFromNow;
+      }).sort((a, b) => new Date(a.expiryDate!).getTime() - new Date(b.expiryDate!).getTime());
+
+      setUrgentItems(expiringSoon.slice(0, 3));
+      
       const count = stockData.filter(p => {
         const isLow = p.quantity <= p.minThreshold;
         const isExpiring = p.expiryDate ? new Date(p.expiryDate) <= threeDaysFromNow : false;
@@ -88,13 +74,6 @@ const Home = () => {
     };
     fetchData();
   }, []);
-
-  // Trier le stock pour afficher les alertes en premier dans la liste "À surveiller"
-  const watchlist = [...stock].sort((a, b) => {
-      const scoreA = (a.quantity <= a.minThreshold ? 2 : 0) + (a.expiryDate && new Date(a.expiryDate) <= new Date() ? 3 : 0);
-      const scoreB = (b.quantity <= b.minThreshold ? 2 : 0) + (b.expiryDate && new Date(b.expiryDate) <= new Date() ? 3 : 0);
-      return scoreB - scoreA;
-  }).slice(0, 4);
 
   return (
     <div className="space-y-8 animate-fade-in pb-10">
@@ -119,6 +98,37 @@ const Home = () => {
         </div>
         <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-l from-mint/10 to-transparent hidden md:block" />
       </div>
+
+      {/* Urgent Freshness Section */}
+      {urgentItems.length > 0 && (
+        <section className="animate-slide-up">
+            <div className="flex items-center gap-2 mb-4 px-1">
+                <Zap className="text-honey fill-honey" size={20} />
+                <h2 className="text-lg font-bold text-gray-800">Priorité Fraîcheur</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {urgentItems.map(item => {
+                    const diff = Math.ceil((new Date(item.expiryDate!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                    return (
+                        <div key={item.id} className="bg-white p-4 rounded-2xl border border-honey/20 shadow-sm flex items-center justify-between group hover:border-honey transition-all">
+                            <div className="flex items-center gap-3">
+                                <div className="text-2xl">{getCategoryIcon(item.category)}</div>
+                                <div>
+                                    <p className="font-bold text-gray-800 text-sm">{item.name}</p>
+                                    <p className={`text-[10px] font-black uppercase ${diff <= 0 ? 'text-red-500' : 'text-honey'}`}>
+                                        {diff <= 0 ? "Expiré" : `Périme dans ${diff}j`}
+                                    </p>
+                                </div>
+                            </div>
+                            <Link to="/recettes" className="p-2 bg-gray-50 rounded-lg text-gray-400 group-hover:bg-honey group-hover:text-white transition-all">
+                                <ChefHat size={16} />
+                            </Link>
+                        </div>
+                    )
+                })}
+            </div>
+        </section>
+      )}
 
       {/* Overview Stats */}
       <section>
@@ -160,15 +170,21 @@ const Home = () => {
              {loading ? (
                [1,2,3].map(i => <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />)
              ) : (
-               watchlist.length > 0 ? (
-                 watchlist.map(product => (
-                   <ProductRow key={product.id} product={product} />
-                 ))
-               ) : (
-                 <div className="p-8 text-center bg-white rounded-xl border border-dashed border-gray-200 text-gray-400 text-sm">
-                    Tout est sous contrôle. Aucun produit à surveiller.
-                 </div>
-               )
+               stock.slice(0, 4).map(product => {
+                  const isLow = product.quantity <= product.minThreshold;
+                  return (
+                    <div key={product.id} className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-xl">{getCategoryIcon(product.category)}</div>
+                            <div>
+                                <p className="font-bold text-gray-800">{product.name}</p>
+                                <p className="text-xs text-gray-500">{product.quantity} {product.unit}</p>
+                            </div>
+                        </div>
+                        {isLow && <span className="text-[10px] font-black uppercase text-red-500 bg-red-50 px-2 py-1 rounded-full">Stock Bas</span>}
+                    </div>
+                  )
+               })
              )}
           </div>
         </div>

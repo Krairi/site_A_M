@@ -1,11 +1,23 @@
+
+export type UserRole = 'user' | 'admin' | 'manager';
+export type UserPermission = 'manage_stock' | 'view_budget' | 'manage_planning' | 'admin_access' | 'generate_recipes';
+
 export interface User {
   id: string;
   email: string;
   foyer_id: string;
   name: string;
+  role: UserRole;
   plan: 'free' | 'premium' | 'family';
+  subscriptionStatus: 'active' | 'past_due' | 'canceled' | 'none';
   diet?: string;
+  allergens?: string[];
+  dislikes?: string[];
   emailAlerts?: boolean;
+  householdSize: number;
+  permissions: UserPermission[];
+  accountStatus: 'active' | 'suspended' | 'pending';
+  lastActive?: string;
 }
 
 export interface Product {
@@ -17,6 +29,7 @@ export interface Product {
   expiryDate?: string;
   minThreshold: number;
   foyer_id: string;
+  lastUpdated?: string;
 }
 
 export interface Recipe {
@@ -29,16 +42,13 @@ export interface Recipe {
   calories?: number;
   imageUrl?: string;
   isAiGenerated: boolean;
+  servings?: number;
 }
 
-export interface Alert {
+export interface MealPlan {
   id: string;
-  type: 'expiry' | 'stock' | 'info';
-  message: string;
   date: string;
-}
-
-export interface ChartData {
-  name: string;
-  value: number;
+  type: 'breakfast' | 'lunch' | 'snack' | 'dinner';
+  recipeId: string;
+  recipeTitle: string; 
 }
