@@ -16,7 +16,7 @@ class RealSupabaseService {
   private localTickets: Ticket[] = [];
 
   constructor() {
-    const savedTickets = localStorage.getItem('givd_tickets');
+    const savedTickets = localStorage.getItem('domyli_tickets');
     if (savedTickets) {
         this.localTickets = JSON.parse(savedTickets);
     }
@@ -51,7 +51,7 @@ class RealSupabaseService {
       const isSystemAdmin = authUser.email === SUPER_ADMIN_EMAIL;
       
       // Merge base de données + fallback local (pour le développement)
-      const localKey = `givd_profile_${authUser.id}`;
+      const localKey = `domyli_profile_${authUser.id}`;
       let localProfile = JSON.parse(localStorage.getItem(localKey) || '{}');
 
       return {
@@ -114,7 +114,7 @@ class RealSupabaseService {
 
     if (error) {
         // Fallback local
-        const localKey = `givd_profile_${userId}`;
+        const localKey = `domyli_profile_${userId}`;
         const profile = JSON.parse(localStorage.getItem(localKey) || '{}');
         profile.permissions = permissions;
         profile.role = role;
@@ -133,7 +133,7 @@ class RealSupabaseService {
 
     if (error) {
         // Fallback local
-        const localKey = `givd_profile_${userId}`;
+        const localKey = `domyli_profile_${userId}`;
         const profile = JSON.parse(localStorage.getItem(localKey) || '{}');
         profile.accountStatus = status;
         localStorage.setItem(localKey, JSON.stringify(profile));
@@ -158,7 +158,7 @@ class RealSupabaseService {
         .eq('id', user.id);
 
     // Fallback local
-    const localKey = `givd_profile_${user.id}`;
+    const localKey = `domyli_profile_${user.id}`;
     const existing = JSON.parse(localStorage.getItem(localKey) || '{}');
     const { role, permissions, ...safeData } = userData as any;
     localStorage.setItem(localKey, JSON.stringify({ ...existing, ...safeData }));

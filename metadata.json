@@ -1,6 +1,6 @@
 {
-  "name": "Domy - Gestionnaire Intelligent",
-  "description": "Domy : Gestionnaire Intelligent de Vie Domestique. Stock, Recettes IA, et Budget simplifiés.",
+  "name": "Domyli - Gestionnaire Intelligent",
+  "description": "Domyli : Gestionnaire Intelligent de Vie Domestique. Stock, Recettes IA, et Budget simplifiés.",
   "requestFramePermissions": [
     "camera",
     "microphone"

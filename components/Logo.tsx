@@ -45,10 +45,10 @@ const Logo: React.FC<LogoProps> = ({ className = "", showText = true, size = 'md
         <path d="M35 65C40 70 60 70 65 65" stroke="white" strokeWidth="5" strokeLinecap="round" />
       </svg>
 
-      {/* Texte Domy stylisé avec dégradé - retrait du filtre pour corriger le bug de clip */}
+      {/* Texte Domyli stylisé avec dégradé */}
       {showText && (
         <span className={`${textSizes[size]} font-display font-bold tracking-tighter bg-gradient-to-r from-mint via-aqua to-honey bg-clip-text text-transparent`}>
-          Domy
+          Domyli
         </span>
       )}
     </div>

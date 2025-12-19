@@ -1,7 +1,7 @@
 
 import { Home, Receipt, Package, ChefHat, BarChart2, User, CreditCard, CalendarRange, ShieldCheck, Activity, Users } from 'lucide-react';
 
-export const APP_NAME = "Domy";
+export const APP_NAME = "Domyli";
 export const TAGLINE = "Votre foyer, en pilote automatique.";
 
 export const NAVIGATION_ITEMS = [

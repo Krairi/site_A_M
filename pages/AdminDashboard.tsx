@@ -157,7 +157,7 @@ const AdminDashboard = () => {
             {/* Header Exactly like screenshot */}
             <div className="flex items-start justify-between">
                 <div>
-                    <h1 className="text-4xl font-display font-bold text-gray-900">Administration GIVD</h1>
+                    <h1 className="text-4xl font-display font-bold text-gray-900">Administration Domyli</h1>
                     <p className="text-gray-500 mt-2 font-medium">Gestion centralisée des comptes et privilèges.</p>
                 </div>
                 <button 
