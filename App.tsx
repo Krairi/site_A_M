@@ -13,9 +13,9 @@ import Auth from './pages/Auth';
 import Audit from './pages/Audit';
 import AdminDashboard from './pages/AdminDashboard';
 import { supabase } from './services/mockSupabase';
-import { isAdmin } from './services/authService';
+import { isSuperAdmin } from './services/authService';
 import React, { useEffect, useState } from 'react';
-import { Loader2, ShieldAlert } from 'lucide-react';
+import { Loader2, ShieldAlert, Lock } from 'lucide-react';
 import { User } from './types';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode, adminOnly?: boolean }> = ({ children, adminOnly = false }) => {
@@ -37,27 +37,38 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode, adminOnly?: boolean 
     </div>
   );
 
-  // 1. Redirection si non connecté
   if (!user) return <Navigate to="/auth" />;
 
-  // 2. Vérification compte suspendu
+  // Vérification de suspension
   if (user.accountStatus === 'suspended') {
       return (
         <div className="min-h-screen flex items-center justify-center bg-red-50 p-6">
             <div className="bg-white p-10 rounded-[3rem] shadow-xl text-center max-w-md border border-red-100">
                 <ShieldAlert size={64} className="text-red-500 mx-auto mb-6" />
                 <h1 className="text-2xl font-display font-bold text-gray-900 mb-2">Accès Suspendu</h1>
-                <p className="text-gray-500 mb-8">Votre compte a été désactivé par un administrateur du foyer.</p>
+                <p className="text-gray-500 mb-8">Votre compte a été désactivé. Veuillez contacter le support.</p>
                 <button onClick={() => supabase.logout().then(() => window.location.reload())} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold">Déconnexion</button>
             </div>
         </div>
       );
   }
 
-  // 3. Redirection si accès admin requis mais droits insuffisants
-  if (adminOnly && !isAdmin(user)) {
-    console.warn("Accès refusé : Rôle admin requis.");
-    return <Navigate to="/" />;
+  // Vérification Admin stricte (admin@givd.com)
+  if (adminOnly && !isSuperAdmin(user)) {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+            <div className="bg-white p-12 rounded-[3rem] shadow-soft text-center max-w-md border border-gray-100 animate-slide-up">
+                <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <Lock size={40} />
+                </div>
+                <h1 className="text-2xl font-display font-bold text-gray-900 mb-4">Zone Réservée</h1>
+                <p className="text-gray-500 mb-8 leading-relaxed">
+                    Désolé, cette page est strictement réservée au Super Administrateur (<strong>admin@givd.com</strong>).
+                </p>
+                <button onClick={() => window.location.href = '/'} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold shadow-xl transition-all hover:scale-105">Retour à l'accueil</button>
+            </div>
+        </div>
+    );
   }
 
   return <Layout>{children}</Layout>;
@@ -78,7 +89,6 @@ function App() {
         <Route path="/compte" element={<ProtectedRoute><Account /></ProtectedRoute>} />
         <Route path="/abonnements" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
         
-        {/* ROUTES ADMIN (LAYER FRONT) */}
         <Route path="/audit" element={<ProtectedRoute adminOnly><Audit /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
         
