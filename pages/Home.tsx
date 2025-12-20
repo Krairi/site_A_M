@@ -1,10 +1,146 @@
 
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, AlertTriangle, Package, ChefHat, Plus, Clock, Zap } from 'lucide-react';
+import { ArrowRight, AlertTriangle, Package, ChefHat, Plus, Clock, Zap, Target, Sparkles, Star, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../services/mockSupabase';
+import { getAiCoachData } from '../services/geminiService';
 import { Product, User } from '../types';
 import { useTranslation } from '../context/LanguageContext';
+
+const Home = () => {
+  const [stock, setStock] = useState<Product[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [coachData, setCoachData] = useState<any>(null);
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const [stockData, userData] = await Promise.all([
+        supabase.getStock(),
+        supabase.getUser()
+      ]);
+      setStock(stockData);
+      setUser(userData);
+      
+      const coach = await getAiCoachData(stockData, userData || {});
+      setCoachData(coach);
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const isPremium = user?.plan === 'premium' || user?.plan === 'family';
+
+  return (
+    <div className="space-y-8 animate-fade-in pb-10">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden bg-white rounded-[2.5rem] p-8 md:p-12 shadow-soft border border-gray-100">
+        <div className="relative z-10 max-w-2xl">
+          <span className="inline-block px-4 py-1.5 bg-aqua/10 text-aqua rounded-full text-[10px] font-black uppercase tracking-widest mb-6">
+            Tableau de Bord Intelligent
+          </span>
+          <h1 className="text-4xl md:text-6xl font-display font-bold text-gray-900 mb-4 leading-tight">
+            {t('home.greeting')}, {user?.name || 'Ami'} 👋 <br/>
+            <span className="text-gray-400">Prêt à optimiser votre foyer ?</span>
+          </h1>
+          <div className="flex gap-4 mt-10">
+             <Link to="/tickets" className="px-8 py-4 bg-mint text-white font-bold rounded-2xl shadow-glow hover:bg-teal-400 transition-all flex items-center gap-2 text-sm">
+               <Plus size={20} /> {t('home.scan_ticket')}
+             </Link>
+             <Link to="/recettes" className="px-8 py-4 bg-gray-50 text-gray-700 font-bold rounded-2xl hover:bg-gray-100 transition-all flex items-center gap-2 text-sm border border-gray-100">
+               <ChefHat size={20} /> {t('home.recipe_idea')}
+             </Link>
+          </div>
+        </div>
+        <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-l from-mint/5 to-transparent hidden md:block" />
+      </div>
+
+      {/* NEW SECTION: DOMY COACH */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-gradient-to-br from-gray-900 to-slate-800 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Target size={120} />
+            </div>
+            
+            <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-8">
+                    <div className="p-3 bg-mint/20 rounded-2xl text-mint">
+                        <Sparkles size={24} />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-display font-bold">Domy Coach <span className="text-mint">IA</span></h2>
+                        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Analyse de performance du foyer</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div className="flex flex-col items-center justify-center p-6 bg-white/5 rounded-[2rem] border border-white/10">
+                        <div className="relative w-32 h-32 flex items-center justify-center mb-4">
+                            <svg className="w-full h-full transform -rotate-90">
+                                <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-white/10" />
+                                <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={364} strokeDashoffset={364 - (364 * (coachData?.score || 0) / 100)} className="text-mint transition-all duration-1000 ease-out" />
+                            </svg>
+                            <span className="absolute text-3xl font-display font-bold">{coachData?.score || '--'}</span>
+                        </div>
+                        <p className="text-sm font-bold text-gray-300 uppercase tracking-widest">Score Domyli</p>
+                    </div>
+
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-black uppercase text-mint tracking-widest">Missions du jour</h3>
+                        <div className="space-y-3">
+                            {coachData?.missions?.slice(0, isPremium ? 3 : 1).map((m: any, i: number) => (
+                                <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-mint/20 text-mint flex items-center justify-center text-xs font-bold">+{m.reward}</div>
+                                        <span className="text-sm font-medium">{m.title}</span>
+                                    </div>
+                                    <ArrowRight size={16} className="text-gray-500 group-hover:translate-x-1 transition-transform" />
+                                </div>
+                            ))}
+                            {!isPremium && (
+                                <Link to="/abonnements" className="flex items-center justify-center gap-2 p-4 bg-honey/10 border border-honey/20 rounded-2xl text-honey text-xs font-bold uppercase tracking-widest hover:bg-honey/20 transition-all">
+                                    <Lock size={14} /> Débloquer 2 missions de plus
+                                </Link>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div className="bg-white rounded-[2.5rem] p-8 shadow-soft border border-gray-100 flex flex-col">
+            <div className="flex items-center gap-2 mb-6">
+                <Star className="text-honey fill-honey" size={20} />
+                <h3 className="font-display font-bold text-gray-900">Potentiel Premium</h3>
+            </div>
+            <p className="text-gray-500 text-sm leading-relaxed mb-6 italic">
+                "{coachData?.summary || "Analysez votre stock pour recevoir vos conseils personnalisés."}"
+            </p>
+            <div className="mt-auto p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Économie Estimée</p>
+                <p className="text-2xl font-display font-bold text-gray-900">{isPremium ? "42.50 € / mois" : "??. ?? €"}</p>
+                {!isPremium && (
+                    <Link to="/abonnements" className="mt-4 w-full py-3 bg-gray-900 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors">
+                        Voir mon analyse <ArrowRight size={14} />
+                    </Link>
+                )}
+            </div>
+        </div>
+      </section>
+
+      {/* Overview Stats (Rest of existing UI) */}
+      <section>
+        <h2 className="text-xl font-display font-bold text-gray-800 mb-6 px-1">En un coup d'œil</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <StatCard title="Produits" value={stock.length} icon={Package} colorClass="bg-aqua text-aqua" link="/stock" />
+          <StatCard title="Alertes" value={stock.filter(p => p.quantity <= p.minThreshold).length} icon={AlertTriangle} colorClass="bg-honey text-honey" link="/stock" alert={true} />
+          <StatCard title="Recettes" value="12" icon={ChefHat} colorClass="bg-mint text-mint" link="/recettes" />
+        </div>
+      </section>
+    </div>
+  );
+};
 
 const StatCard = ({ title, value, icon: Icon, colorClass, link, alert = false }: any) => (
   <Link to={link} className="block group">
@@ -22,204 +158,5 @@ const StatCard = ({ title, value, icon: Icon, colorClass, link, alert = false }:
     </div>
   </Link>
 );
-
-const getCategoryIcon = (category: string) => {
-    switch (category) {
-        case 'Fruits & Légumes': return '🥦';
-        case 'Viandes & Poissons': return '🥩';
-        case 'Produits Laitiers': return '🥛';
-        case 'Épicerie & Conserves': return '🍝';
-        case 'Boissons': return '🧃';
-        case 'Surgelés': return '❄️';
-        case 'Hygiène & Maison': return '🧼';
-        default: return '📦';
-    }
-};
-
-const Home = () => {
-  const [stock, setStock] = useState<Product[]>([]);
-  const [user, setUser] = useState<User | null>(null);
-  const { t } = useTranslation();
-  const [loading, setLoading] = useState(true);
-  const [alertCount, setAlertCount] = useState(0);
-  const [urgentItems, setUrgentItems] = useState<Product[]>([]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const [stockData, userData] = await Promise.all([
-        supabase.getStock(),
-        supabase.getUser()
-      ]);
-      setStock(stockData);
-      setUser(userData);
-      
-      const now = new Date();
-      const threeDaysFromNow = new Date();
-      threeDaysFromNow.setDate(now.getDate() + 3);
-
-      const expiringSoon = stockData.filter(p => {
-        if (!p.expiryDate) return false;
-        const exp = new Date(p.expiryDate);
-        return exp <= threeDaysFromNow;
-      }).sort((a, b) => new Date(a.expiryDate!).getTime() - new Date(b.expiryDate!).getTime());
-
-      setUrgentItems(expiringSoon.slice(0, 3));
-      
-      const count = stockData.filter(p => {
-        const isLow = p.quantity <= p.minThreshold;
-        const isExpiring = p.expiryDate ? new Date(p.expiryDate) <= threeDaysFromNow : false;
-        return isLow || isExpiring;
-      }).length;
-
-      setAlertCount(count);
-      setLoading(false);
-    };
-    fetchData();
-  }, []);
-
-  return (
-    <div className="space-y-8 animate-fade-in pb-10">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden bg-white rounded-[2.5rem] p-8 md:p-12 shadow-soft border border-gray-100">
-        <div className="relative z-10 max-w-2xl">
-          <span className="inline-block px-4 py-1.5 bg-aqua/10 text-aqua rounded-full text-[10px] font-black uppercase tracking-widest mb-6">
-            Smart Domestic Living
-          </span>
-          <h1 className="text-4xl md:text-6xl font-display font-bold text-gray-900 mb-4 leading-tight">
-            {t('home.greeting')}, {user?.name || 'admin3'} 👋 <br/>
-            <span className="text-gray-400">{t('home.subtitle')}</span>
-          </h1>
-          <div className="flex gap-4 mt-10">
-             <Link to="/tickets" className="px-8 py-4 bg-mint text-white font-bold rounded-2xl shadow-glow hover:bg-teal-400 transition-all transform hover:scale-105 flex items-center gap-2 active:scale-95 text-sm">
-               <Plus size={20} /> {t('home.scan_ticket')}
-             </Link>
-             <Link to="/recettes" className="px-8 py-4 bg-gray-50 text-gray-700 font-bold rounded-2xl hover:bg-gray-100 transition-all flex items-center gap-2 text-sm border border-gray-100">
-               <ChefHat size={20} /> {t('home.recipe_idea')}
-             </Link>
-          </div>
-        </div>
-        <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-l from-mint/5 to-transparent hidden md:block" />
-      </div>
-
-      {/* Urgent Freshness Section (Matched to Screenshot) */}
-      <section className="animate-slide-up">
-          <div className="flex items-center gap-2 mb-6 px-1">
-              <Zap className="text-honey fill-honey" size={20} />
-              <h2 className="text-xl font-display font-bold text-gray-800">{t('home.freshness_priority')}</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {urgentItems.length > 0 ? urgentItems.map(item => {
-                  const diff = Math.ceil((new Date(item.expiryDate!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                  return (
-                      <div key={item.id} className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-soft flex items-center justify-between group hover:border-aqua/30 transition-all relative overflow-hidden">
-                          <div className="flex items-center gap-5">
-                              <div className="w-14 h-14 bg-aqua/5 rounded-2xl flex items-center justify-center text-3xl shadow-inner border border-aqua/10">
-                                  {getCategoryIcon(item.category)}
-                              </div>
-                              <div className="space-y-1">
-                                  <p className="font-bold text-gray-900 text-lg leading-tight">{item.name}</p>
-                                  <p className={`text-[10px] font-black tracking-widest uppercase ${diff <= 0 ? 'text-red-500' : 'text-honey'}`}>
-                                      {diff < 0 ? t('home.expired') : diff === 0 ? t('home.today') : `${t('home.expires_in')} ${diff}${t('home.days_short')}`}
-                                  </p>
-                              </div>
-                          </div>
-                          <Link to="/recettes" className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 group-hover:bg-mint group-hover:text-white group-hover:border-mint transition-all shadow-sm">
-                              <ChefHat size={18} />
-                          </Link>
-                      </div>
-                  )
-              }) : (
-                <div className="col-span-full py-8 text-center bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
-                   <p className="text-gray-400 font-medium italic">Tout est frais ! Aucun produit en alerte.</p>
-                </div>
-              )}
-          </div>
-      </section>
-
-      {/* Overview Stats */}
-      <section>
-        <h2 className="text-xl font-display font-bold text-gray-800 mb-6 px-1">{t('home.overview')}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatCard 
-            title={t('home.stock_count')}
-            value={stock.length} 
-            icon={Package} 
-            colorClass="bg-aqua text-aqua" 
-            link="/stock" 
-          />
-          <StatCard 
-            title={t('home.active_alerts')}
-            value={alertCount} 
-            icon={AlertTriangle} 
-            colorClass="bg-honey text-honey" 
-            link="/stock"
-            alert={true}
-          />
-          <StatCard 
-            title={t('home.recipes_this_month')}
-            value="12" 
-            icon={ChefHat} 
-            colorClass="bg-mint text-mint" 
-            link="/recettes" 
-          />
-        </div>
-      </section>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* Watchlist */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex justify-between items-center px-1">
-             <h2 className="text-xl font-display font-bold text-gray-800">{t('home.to_watch')}</h2>
-             <Link to="/stock" className="text-aqua text-sm font-black uppercase tracking-widest hover:underline">{t('home.see_all')}</Link>
-          </div>
-          <div className="grid grid-cols-1 gap-4">
-             {loading ? (
-               [1,2,3,4].map(i => <div key={i} className="h-20 bg-gray-100 rounded-2xl animate-pulse" />)
-             ) : (
-               stock.slice(0, 4).map(product => {
-                  const isLow = product.quantity <= product.minThreshold;
-                  return (
-                    <div key={product.id} className="flex items-center justify-between p-5 bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-center gap-5">
-                            <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-2xl border border-gray-100">{getCategoryIcon(product.category)}</div>
-                            <div>
-                                <p className="font-bold text-gray-900 text-lg">{product.name}</p>
-                                <p className="text-xs text-gray-400 font-bold">{product.quantity} {product.unit}</p>
-                            </div>
-                        </div>
-                        {isLow && <span className="text-[10px] font-black uppercase text-red-500 bg-red-50 px-4 py-1.5 rounded-full border border-red-100">Stock Bas</span>}
-                    </div>
-                  )
-               })
-             )}
-          </div>
-        </div>
-
-        {/* Suggestion Panel */}
-        <div className="space-y-6">
-          <h2 className="text-xl font-display font-bold text-gray-800 px-1">{t('home.suggestion')}</h2>
-          <Link to="/recettes">
-            <div className="bg-white rounded-[2.5rem] p-3 shadow-soft border border-gray-100 hover:shadow-xl transition-all cursor-pointer group h-full">
-                <div className="relative h-60 rounded-[2rem] overflow-hidden mb-6">
-                <img 
-                    src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80" 
-                    alt="Recipe" 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                />
-                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-800 shadow-xl flex items-center gap-2">
-                    <Clock size={12} className="text-mint" /> 15 MIN
-                </div>
-                </div>
-                <div className="px-4 pb-4">
-                <h3 className="font-display font-bold text-gray-900 text-2xl mb-2 group-hover:text-mint transition-colors">Salade Healthy</h3>
-                <p className="text-gray-500 text-sm line-clamp-2 leading-relaxed italic">Une recette simple et équilibrée pour sublimer vos restes de légumes frais.</p>
-                </div>
-            </div>
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default Home;
