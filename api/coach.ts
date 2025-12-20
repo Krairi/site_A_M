@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 
 export const config = {
@@ -8,10 +7,7 @@ export const config = {
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // 1. Solution sécurisée (Type Narrowing)
-  const apiKey = process.env.API_KEY;
-
-  if (!apiKey) {
+  if (!process.env.API_KEY) {
     console.error("ERREUR: Clé API Gemini manquante.");
     return res.status(500).json({ error: "Clé API manquante dans l'environnement." });
   }
@@ -19,8 +15,8 @@ export default async function handler(req: any, res: any) {
   const { stock, user } = req.body;
 
   try {
-    // Ici, TS sait que apiKey est obligatoirement une string grâce au check ci-dessus
-    const ai = new GoogleGenAI({ apiKey });
+    // Initializing the GenAI client using process.env.API_KEY directly as a named parameter
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const stockContext = stock?.map((p: any) => 
       `${p.name} (${p.quantity} ${p.unit}, péremption: ${p.expiryDate || 'N/A'})`
@@ -66,7 +62,7 @@ export default async function handler(req: any, res: any) {
       }
     });
 
-    // 2. Correction de l'erreur sur response.text (qui peut être undefined)
+    // Extracting generated text content directly from the .text property
     const textResponse = response.text;
     if (!textResponse) {
       throw new Error("L'IA n'a renvoyé aucun contenu.");

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Check, Star, Users, Package, BarChart2, Zap, ShieldCheck, Loader2, CreditCard } from 'lucide-react';
+import { Check, Package, Zap, ShieldCheck, Loader2, CreditCard } from 'lucide-react';
 import { supabase } from '../services/mockSupabase';
 import { User } from '../types';
 
@@ -13,37 +13,36 @@ const PlanCard = ({
     onSelect,
     color,
     icon: Icon,
-    loading = false
+    loading = false,
+    buttonColor = "bg-gray-900"
 }: any) => (
-    <div className={`relative flex flex-col p-8 rounded-[2.5rem] transition-all duration-500 ${
+    <div className={`relative flex flex-col p-8 rounded-[3rem] transition-all duration-500 h-full ${
         recommended 
         ? 'bg-white border-2 border-mint shadow-2xl scale-105 z-10' 
         : 'bg-white border border-gray-100 shadow-soft hover:shadow-xl'
-    } ${current ? 'ring-2 ring-offset-4 ring-mint/20' : ''}`}>
+    } ${current ? 'bg-white' : ''}`}>
         
         {recommended && (
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-mint text-white px-6 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-lg animate-bounce">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-mint text-white px-6 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
                 Plus Populaire
             </div>
         )}
 
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${color}`}>
-            <Icon className="text-white w-7 h-7" />
+        <div className="flex flex-col mb-8">
+            <h3 className="text-3xl font-display font-bold text-gray-900 mb-1">{title}</h3>
+            <div className="flex items-baseline">
+                <span className="text-4xl font-display font-bold text-gray-900">{price}</span>
+                <span className="text-gray-500 ml-1 text-sm font-medium">/mois</span>
+            </div>
         </div>
 
-        <h3 className="text-2xl font-display font-bold text-gray-900 mb-1">{title}</h3>
-        <div className="flex items-baseline mb-8">
-            <span className="text-4xl font-display font-bold text-gray-900">{price}</span>
-            <span className="text-gray-500 ml-1 text-sm font-medium">/mois</span>
-        </div>
-
-        <ul className="space-y-5 mb-10 flex-1">
+        <ul className="space-y-6 mb-12 flex-1">
             {features.map((feat: string, idx: number) => (
-                <li key={idx} className="flex items-start gap-4 text-sm text-gray-600">
-                    <div className="mt-1 p-0.5 bg-mint/10 rounded-full text-mint">
+                <li key={idx} className="flex items-start gap-4 text-sm text-gray-500 font-medium">
+                    <div className="mt-0.5 p-0.5 bg-mint/10 rounded-full text-mint flex-shrink-0">
                         <Check size={14} />
                     </div>
-                    <span className="leading-tight">{feat}</span>
+                    <span className="leading-snug">{feat}</span>
                 </li>
             ))}
         </ul>
@@ -51,16 +50,14 @@ const PlanCard = ({
         <button 
             onClick={onSelect}
             disabled={current || loading}
-            className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-3 ${
+            className={`w-full py-5 rounded-[2rem] font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-3 ${
                 current 
-                ? 'bg-gray-100 text-gray-400 cursor-default' 
-                : recommended
-                    ? 'bg-mint text-white hover:bg-teal-400 shadow-xl shadow-mint/30 active:scale-95 hover:-translate-y-1'
-                    : 'bg-gray-900 text-white hover:bg-gray-800 active:scale-95'
+                ? 'bg-[#F2F3F4] text-[#D5D8DC] cursor-default border border-gray-100 shadow-none' 
+                : `${buttonColor} text-white hover:opacity-90 shadow-xl active:scale-95 transition-transform`
             }`}
         >
             {loading && !current ? <Loader2 className="animate-spin w-4 h-4" /> : null}
-            {current ? 'Votre Plan Actuel' : 'Souscrire'}
+            {current ? 'VOTRE PLAN ACTUEL' : 'SOUSCRIRE'}
         </button>
     </div>
 );
@@ -76,6 +73,7 @@ const Subscriptions = () => {
     }, []);
 
     const startCheckout = (plan: User['plan']) => {
+        if (plan === user?.plan) return;
         setSelectedPlan(plan);
         setIsPaymentModalOpen(true);
     };
@@ -95,22 +93,23 @@ const Subscriptions = () => {
     if (!user) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-mint" /></div>;
 
     return (
-        <div className="space-y-12 animate-fade-in pb-20">
+        <div className="space-y-16 animate-fade-in pb-20 pt-10">
             <div className="text-center max-w-2xl mx-auto space-y-4">
-                <span className="px-4 py-1.5 bg-mint/10 text-mint rounded-full text-xs font-black uppercase tracking-widest">Pricing</span>
-                <h1 className="text-4xl font-display font-bold text-gray-900">Le foyer, en mode pilote automatique</h1>
-                <p className="text-gray-500 text-lg">
+                <span className="px-4 py-1.5 bg-mint/10 text-mint rounded-full text-[10px] font-black uppercase tracking-widest">Abonnements</span>
+                <h1 className="text-5xl font-display font-bold text-gray-900">Le foyer, en mode pilote automatique</h1>
+                <p className="text-gray-400 text-lg font-medium">
                     Choisissez le plan qui correspond à vos ambitions domestiques.
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto px-4 items-stretch">
                 <PlanCard 
                     title="Découverte"
                     price="0€"
                     icon={Package}
                     color="bg-gray-400"
                     current={user.plan === 'free'}
+                    buttonColor="bg-gray-200"
                     features={[
                         "Jusqu'à 10 produits en stock",
                         "Scan de tickets manuel",
@@ -128,6 +127,7 @@ const Subscriptions = () => {
                     recommended={true}
                     current={user.plan === 'premium'}
                     loading={loadingPlan === 'premium'}
+                    buttonColor="bg-mint"
                     features={[
                         "Stock illimité",
                         "Scan IA Gemini Illimité",
@@ -142,9 +142,10 @@ const Subscriptions = () => {
                     title="Famille"
                     price="9.99€"
                     icon={ShieldCheck}
-                    color="bg-gray-900"
+                    color="bg-slate-850"
                     current={user.plan === 'family'}
                     loading={loadingPlan === 'family'}
+                    buttonColor="bg-[#0F172A]"
                     features={[
                         "Tout le contenu Premium",
                         "Multi-comptes illimités",
@@ -156,7 +157,7 @@ const Subscriptions = () => {
                 />
             </div>
 
-            {/* PAYMENT MODAL (MOCK) */}
+            {/* MOCK PAYMENT MODAL */}
             {isPaymentModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !loadingPlan && setIsPaymentModalOpen(false)}></div>
@@ -166,21 +167,17 @@ const Subscriptions = () => {
                                 <CreditCard size={40} />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-display font-bold text-gray-900">Activation du Plan {selectedPlan}</h3>
-                                <p className="text-gray-500 mt-2">Paiement sécurisé via DomyPay</p>
+                                <h3 className="text-2xl font-display font-bold text-gray-900 capitalize">Plan {selectedPlan}</h3>
+                                <p className="text-gray-500 mt-2">Simulation de paiement sécurisé</p>
                             </div>
-                            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-left space-y-3">
+                            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-left space-y-3 font-medium">
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-400">Sous-total</span>
-                                    <span className="font-bold">{selectedPlan === 'premium' ? '4.99' : '9.99'} €</span>
+                                    <span className="text-gray-400">Total</span>
+                                    <span className="font-bold text-gray-900">{selectedPlan === 'premium' ? '4.99' : (selectedPlan === 'family' ? '9.99' : '0.00')} €</span>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-400">Taxes (TVA 20%)</span>
-                                    <span className="font-bold">Incluses</span>
-                                </div>
-                                <div className="pt-3 border-t border-gray-200 flex justify-between">
-                                    <span className="font-bold">Total à payer</span>
-                                    <span className="text-xl font-display font-bold text-mint">{selectedPlan === 'premium' ? '4.99' : '9.99'} €</span>
+                                <div className="pt-3 border-t border-gray-200 flex justify-between items-center">
+                                    <span className="font-bold text-gray-900">Total à payer</span>
+                                    <span className="text-2xl font-display font-bold text-mint">{selectedPlan === 'premium' ? '4.99' : (selectedPlan === 'family' ? '9.99' : '0.00')} €</span>
                                 </div>
                             </div>
                             <button 
@@ -189,7 +186,7 @@ const Subscriptions = () => {
                                 className="w-full py-5 bg-mint text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-mint/30 flex items-center justify-center gap-3 disabled:opacity-50"
                             >
                                 {loadingPlan ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
-                                Confirmer le paiement
+                                CONFIRMER LE PAIEMENT
                             </button>
                         </div>
                     </div>

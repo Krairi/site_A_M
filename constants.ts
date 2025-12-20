@@ -1,8 +1,36 @@
 
 import { Home, Receipt, Package, ChefHat, BarChart2, User, CreditCard, CalendarRange, ShieldCheck, Activity, Users } from 'lucide-react';
+import { PlanLimits, PlanType } from './types';
 
 export const APP_NAME = "Domyli";
 export const TAGLINE = "Votre foyer, en pilote automatique.";
+
+export const PLAN_CONFIG: Record<PlanType, PlanLimits> = {
+  free: {
+    maxProducts: 10,
+    maxRecipesPerMonth: 3,
+    hasAdvancedStats: false,
+    hasAiAssistant: false,
+    hasMultiUser: false,
+    hasExport: false
+  },
+  premium: {
+    maxProducts: 1000,
+    maxRecipesPerMonth: 100,
+    hasAdvancedStats: true,
+    hasAiAssistant: true,
+    hasMultiUser: false,
+    hasExport: true
+  },
+  family: {
+    maxProducts: 9999,
+    maxRecipesPerMonth: 9999,
+    hasAdvancedStats: true,
+    hasAiAssistant: true,
+    hasMultiUser: true,
+    hasExport: true
+  }
+};
 
 export const NAVIGATION_ITEMS = [
   { name: 'nav.overview', path: '/', icon: Home },
@@ -13,7 +41,6 @@ export const NAVIGATION_ITEMS = [
   { name: 'nav.consumption', path: '/consommation', icon: BarChart2 },
   { name: 'nav.account', path: '/compte', icon: User },
   { name: 'nav.subscriptions', path: '/abonnements', icon: CreditCard },
-  // Éléments admin
   { name: 'nav.user_mgmt', path: '/admin', icon: Users, admin: true },
   { name: 'nav.system_audit', path: '/audit', icon: Activity, admin: true },
 ];

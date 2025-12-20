@@ -2,6 +2,7 @@
 export type UserRole = 'user' | 'admin' | 'manager';
 export type UserPermission = 'manage_stock' | 'view_budget' | 'manage_planning' | 'admin_access' | 'generate_recipes';
 export type Language = 'fr' | 'en';
+export type PlanType = 'free' | 'premium' | 'family';
 
 export interface User {
   id: string;
@@ -9,7 +10,7 @@ export interface User {
   foyer_id: string;
   name: string;
   role: UserRole;
-  plan: 'free' | 'premium' | 'family';
+  plan: PlanType;
   subscriptionStatus: 'active' | 'past_due' | 'canceled' | 'none';
   diet?: string;
   allergens?: string[];
@@ -19,6 +20,15 @@ export interface User {
   permissions: UserPermission[];
   accountStatus: 'active' | 'suspended' | 'pending';
   lastActive?: string;
+}
+
+export interface PlanLimits {
+  maxProducts: number;
+  maxRecipesPerMonth: number;
+  hasAdvancedStats: boolean;
+  hasAiAssistant: boolean;
+  hasMultiUser: boolean;
+  hasExport: boolean;
 }
 
 export interface Product {

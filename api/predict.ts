@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 
 export const config = {
@@ -10,9 +9,7 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.API_KEY;
-
-  if (!apiKey) {
+  if (!process.env.API_KEY) {
     console.error("ERREUR: GEMINI_API_KEY manquante.");
     return res.status(500).json({ error: "Configuration serveur incomplète (Clé API manquante)." });
   }
@@ -20,7 +17,8 @@ export default async function handler(req: any, res: any) {
   const { stock, user, mealType } = req.body;
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    // Initializing the GenAI client using process.env.API_KEY directly as a named parameter
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const householdSize = user?.householdSize || 2;
     const diet = user?.diet || 'Standard';
 
@@ -62,6 +60,7 @@ export default async function handler(req: any, res: any) {
       }
     });
 
+    // Extracting generated text content directly from the .text property
     const textResponse = response.text;
     if (!textResponse) {
       throw new Error("Réponse vide de l'IA.");
