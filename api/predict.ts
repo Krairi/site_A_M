@@ -11,15 +11,19 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { stock, user, mealType } = req.body;
+  // Solution sécurisée : Assignation à une constante locale pour le narrowing TypeScript
+  const apiKey = process.env.API_KEY;
 
-  if (!process.env.API_KEY) {
+  if (!apiKey) {
     console.error("ERREUR: GEMINI_API_KEY manquante dans les variables d'environnement.");
     return res.status(500).json({ error: "Configuration serveur incomplète (Clé API manquante)." });
   }
 
+  const { stock, user, mealType } = req.body;
+
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // TypeScript reconnaît maintenant apiKey comme 'string' (et non 'string | undefined')
+    const ai = new GoogleGenAI({ apiKey });
     const householdSize = user?.householdSize || 2;
     const diet = user?.diet || 'Standard';
 

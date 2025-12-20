@@ -8,14 +8,19 @@ export const config = {
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { stock, user } = req.body;
+  // Solution sécurisée : Narrowing du type via une constante locale
+  const apiKey = process.env.API_KEY;
 
-  if (!process.env.API_KEY) {
+  if (!apiKey) {
+    console.error("ERREUR: Clé API Gemini manquante.");
     return res.status(500).json({ error: "Clé API manquante" });
   }
 
+  const { stock, user } = req.body;
+
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Utilisation de la constante locale garantie non-undefined par le check précédent
+    const ai = new GoogleGenAI({ apiKey });
     
     const stockContext = stock?.map((p: any) => 
       `${p.name} (${p.quantity} ${p.unit}, péremption: ${p.expiryDate || 'N/A'})`
@@ -63,6 +68,7 @@ export default async function handler(req: any, res: any) {
 
     return res.status(200).json(JSON.parse(response.text));
   } catch (error: any) {
+    console.error("Coach API Error:", error);
     return res.status(500).json({ error: error.message });
   }
 }
