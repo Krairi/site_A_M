@@ -1,6 +1,7 @@
 
 export type UserRole = 'user' | 'admin' | 'manager';
 export type UserPermission = 'manage_stock' | 'view_budget' | 'manage_planning' | 'admin_access' | 'generate_recipes';
+export type Language = 'fr' | 'en';
 
 export interface User {
   id: string;

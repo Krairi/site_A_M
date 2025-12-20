@@ -7,6 +7,8 @@ import { supabase } from '../services/mockSupabase';
 import MagicCommand from './MagicCommand';
 import Logo from './Logo';
 import { User } from '../types';
+import { useTranslation } from '../context/LanguageContext';
+import LanguageSwitcher from './LanguageSwitcher';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,6 +17,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -34,7 +37,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {user?.role === 'admin' && (
           <div className="mt-2 flex items-center gap-2 px-3 py-1 bg-gray-900 text-white rounded-full w-fit">
             <ShieldAlert size={12} className="text-mint" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Admin Mode</span>
+            <span className="text-[10px] font-black uppercase tracking-widest">{t('common.admin_mode')}</span>
           </div>
         )}
       </div>
@@ -55,19 +58,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               }`}
             >
               <Icon size={20} className={isActive ? 'text-aqua' : 'text-gray-400 group-hover:text-gray-600'} />
-              <span>{item.name}</span>
+              <span>{t(item.name)}</span>
             </NavLink>
           );
         })}
       </nav>
 
-      <div className="p-6 border-t border-gray-100">
+      <div className="p-6 border-t border-gray-100 space-y-4">
+        <LanguageSwitcher />
         <button 
           onClick={handleLogout}
           className="flex items-center gap-3 px-4 py-3 w-full rounded-2xl text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors font-semibold"
         >
           <LogOut size={20} />
-          <span>Déconnexion</span>
+          <span>{t('nav.logout')}</span>
         </button>
       </div>
     </div>
@@ -81,9 +85,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       <div className="lg:hidden fixed top-0 left-0 right-0 h-20 bg-white z-30 flex items-center justify-between px-6 border-b border-gray-100">
         <Logo size="sm" />
-        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-gray-600 hover:bg-gray-50 rounded-xl transition-colors">
-          {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
-        </button>
+        <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-gray-600 hover:bg-gray-50 rounded-xl transition-colors">
+            {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            </button>
+        </div>
       </div>
 
       {isMobileMenuOpen && (

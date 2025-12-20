@@ -5,17 +5,17 @@ export const APP_NAME = "Domyli";
 export const TAGLINE = "Votre foyer, en pilote automatique.";
 
 export const NAVIGATION_ITEMS = [
-  { name: 'Vue d\'ensemble', path: '/', icon: Home },
-  { name: 'Planning', path: '/planning', icon: CalendarRange },
-  { name: 'Stock', path: '/stock', icon: Package },
-  { name: 'Tickets', path: '/tickets', icon: Receipt },
-  { name: 'Recettes', path: '/recettes', icon: ChefHat },
-  { name: 'Consommation', path: '/consommation', icon: BarChart2 },
-  { name: 'Compte', path: '/compte', icon: User },
-  { name: 'Abonnements', path: '/abonnements', icon: CreditCard },
-  // Éléments admin (visibles conditionnellement dans Layout)
-  { name: 'Gestion Utilisateurs', path: '/admin', icon: Users, admin: true },
-  { name: 'Audit Système', path: '/audit', icon: Activity, admin: true },
+  { name: 'nav.overview', path: '/', icon: Home },
+  { name: 'nav.planning', path: '/planning', icon: CalendarRange },
+  { name: 'nav.stock', path: '/stock', icon: Package },
+  { name: 'nav.tickets', path: '/tickets', icon: Receipt },
+  { name: 'nav.recipes', path: '/recettes', icon: ChefHat },
+  { name: 'nav.consumption', path: '/consommation', icon: BarChart2 },
+  { name: 'nav.account', path: '/compte', icon: User },
+  { name: 'nav.subscriptions', path: '/abonnements', icon: CreditCard },
+  // Éléments admin
+  { name: 'nav.user_mgmt', path: '/admin', icon: Users, admin: true },
+  { name: 'nav.system_audit', path: '/audit', icon: Activity, admin: true },
 ];
 
 export const MOCK_STOCK = [

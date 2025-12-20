@@ -17,6 +17,7 @@ import { isSuperAdmin } from './services/authService';
 import React, { useEffect, useState } from 'react';
 import { Loader2, ShieldAlert, Lock } from 'lucide-react';
 import { User } from './types';
+import { LanguageProvider } from './context/LanguageContext';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode, adminOnly?: boolean }> = ({ children, adminOnly = false }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -76,25 +77,27 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode, adminOnly?: boolean 
 
 function App() {
   return (
-    <HashRouter>
-      <Routes>
-        <Route path="/auth" element={<Auth />} />
-        
-        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/planning" element={<ProtectedRoute><Planning /></ProtectedRoute>} />
-        <Route path="/stock" element={<ProtectedRoute><Stock /></ProtectedRoute>} />
-        <Route path="/recettes" element={<ProtectedRoute><Recipes /></ProtectedRoute>} />
-        <Route path="/consommation" element={<ProtectedRoute><Consumption /></ProtectedRoute>} />
-        <Route path="/tickets" element={<ProtectedRoute><Tickets /></ProtectedRoute>} />
-        <Route path="/compte" element={<ProtectedRoute><Account /></ProtectedRoute>} />
-        <Route path="/abonnements" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
-        
-        <Route path="/audit" element={<ProtectedRoute adminOnly><Audit /></ProtectedRoute>} />
-        <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
-        
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </HashRouter>
+    <LanguageProvider>
+      <HashRouter>
+        <Routes>
+          <Route path="/auth" element={<Auth />} />
+          
+          <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+          <Route path="/planning" element={<ProtectedRoute><Planning /></ProtectedRoute>} />
+          <Route path="/stock" element={<ProtectedRoute><Stock /></ProtectedRoute>} />
+          <Route path="/recettes" element={<ProtectedRoute><Recipes /></ProtectedRoute>} />
+          <Route path="/consommation" element={<ProtectedRoute><Consumption /></ProtectedRoute>} />
+          <Route path="/tickets" element={<ProtectedRoute><Tickets /></ProtectedRoute>} />
+          <Route path="/compte" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+          <Route path="/abonnements" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
+          
+          <Route path="/audit" element={<ProtectedRoute adminOnly><Audit /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
+          
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </HashRouter>
+    </LanguageProvider>
   );
 }
 
