@@ -8,18 +8,18 @@ export const config = {
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Solution sécurisée : Narrowing du type via une constante locale
+  // 1. Solution sécurisée (Type Narrowing)
   const apiKey = process.env.API_KEY;
 
   if (!apiKey) {
     console.error("ERREUR: Clé API Gemini manquante.");
-    return res.status(500).json({ error: "Clé API manquante" });
+    return res.status(500).json({ error: "Clé API manquante dans l'environnement." });
   }
 
   const { stock, user } = req.body;
 
   try {
-    // Utilisation de la constante locale garantie non-undefined par le check précédent
+    // Ici, TS sait que apiKey est obligatoirement une string grâce au check ci-dessus
     const ai = new GoogleGenAI({ apiKey });
     
     const stockContext = stock?.map((p: any) => 
@@ -66,9 +66,15 @@ export default async function handler(req: any, res: any) {
       }
     });
 
-    return res.status(200).json(JSON.parse(response.text));
+    // 2. Correction de l'erreur sur response.text (qui peut être undefined)
+    const textResponse = response.text;
+    if (!textResponse) {
+      throw new Error("L'IA n'a renvoyé aucun contenu.");
+    }
+
+    return res.status(200).json(JSON.parse(textResponse));
   } catch (error: any) {
     console.error("Coach API Error:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message || "Erreur interne du serveur" });
   }
 }

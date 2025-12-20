@@ -1,7 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Forcer le runtime Node.js pour Vercel
 export const config = {
   runtime: 'nodejs',
 };
@@ -11,18 +10,16 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Solution sécurisée : Assignation à une constante locale pour le narrowing TypeScript
   const apiKey = process.env.API_KEY;
 
   if (!apiKey) {
-    console.error("ERREUR: GEMINI_API_KEY manquante dans les variables d'environnement.");
+    console.error("ERREUR: GEMINI_API_KEY manquante.");
     return res.status(500).json({ error: "Configuration serveur incomplète (Clé API manquante)." });
   }
 
   const { stock, user, mealType } = req.body;
 
   try {
-    // TypeScript reconnaît maintenant apiKey comme 'string' (et non 'string | undefined')
     const ai = new GoogleGenAI({ apiKey });
     const householdSize = user?.householdSize || 2;
     const diet = user?.diet || 'Standard';
@@ -65,8 +62,12 @@ export default async function handler(req: any, res: any) {
       }
     });
 
-    const result = JSON.parse(response.text || "{}");
-    return res.status(200).json(result);
+    const textResponse = response.text;
+    if (!textResponse) {
+      throw new Error("Réponse vide de l'IA.");
+    }
+
+    return res.status(200).json(JSON.parse(textResponse));
 
   } catch (error: any) {
     console.error("Erreur API Gemini:", error);
