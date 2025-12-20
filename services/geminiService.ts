@@ -1,7 +1,9 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Product, Recipe, User } from "../types";
 
+/**
+ * Analyse la santé de l'inventaire avec Gemini
+ */
 export const analyzeInventoryHealth = async (stock: Product[], householdSize: number = 2): Promise<{
   wasteScore: number;
   insights: string[];
@@ -30,7 +32,7 @@ export const analyzeInventoryHealth = async (stock: Product[], householdSize: nu
       
       TÂCHE :
       1. Calcule un score de gaspillage (0-100). 
-      2. Donne des insights stratégiques : note que pour ${householdSize} personnes, la vitesse de consommation est spécifique. 
+      2. Donne des insights stratégiques basés sur la taille du foyer.
       3. Identifie les produits critiques.
       
       Réponds UNIQUEMENT en JSON.
@@ -55,8 +57,10 @@ export const analyzeInventoryHealth = async (stock: Product[], householdSize: nu
       }
     });
 
-    if (response.text) {
-      return JSON.parse(response.text);
+    // Correctly accessing the .text property as per guidelines
+    const responseText = response.text;
+    if (responseText) {
+      return JSON.parse(responseText);
     }
     return null;
   } catch (error) {
@@ -65,44 +69,25 @@ export const analyzeInventoryHealth = async (stock: Product[], householdSize: nu
   }
 };
 
+/**
+ * Génère une recette basée sur le stock et le moment de la journée
+ */
 export const generateRecipeWithGemini = async (stock: Product[], user: Partial<User>, mealType: string): Promise<Recipe | null> => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const householdSize = user.householdSize || 2;
     
-    const sortedStock = [...stock].sort((a, b) => {
-        if (!a.expiryDate) return 1;
-        if (!b.expiryDate) return -1;
-        return new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime();
-    });
-
-    const stockList = sortedStock.map(p => {
+    const stockList = stock.map(p => {
         const exp = p.expiryDate ? ` (Périme le ${p.expiryDate})` : "";
         return `${p.quantity} ${p.unit} of ${p.name}${exp}`;
     }).join(', ');
 
-    const themes: Record<string, string> = {
-        'breakfast': "Thème: Énergie matinale. Couleurs: Ambrées/Dorées. Focus: Boost métabolique.",
-        'lunch': "Thème: Clarté et efficacité. Couleurs: Bleutées/Fraîches. Focus: Concentration et légèreté.",
-        'snack': "Thème: Douceur de l'après-midi. Couleurs: Miel/Chaudes. Focus: Réconfort sain.",
-        'dinner': "Thème: Calme et digestion. Couleurs: Ardoise/Indigo/Sombres. Focus: Sommeil et relaxation."
-    };
-
-    const selectedTheme = themes[mealType.toLowerCase()] || themes['lunch'];
-
     const prompt = `
-      Tu es un Chef IA spécialisé.
-      MOMENT : ${mealType}.
-      TAILLE DU FOYER : ${householdSize} personnes.
-      DIRECTIVE : ${selectedTheme}.
-      STOCK DISPONIBLE : ${stockList}.
-      PROFIL : Régime ${user.diet || 'Standard'}, Allergies: ${user.allergens?.join(', ') || 'Aucune'}.
-
-      CONSIGNES CRITIQUES :
-      - Calcule les QUANTITÉS d'ingrédients spécifiquement pour ${householdSize} personnes.
-      - Précise "servings: ${householdSize}" dans le JSON.
-      - Utilise les ingrédients du stock en priorité.
-
+      Tu es un Chef IA. Génère une recette pour ${mealType}.
+      Taille du foyer : ${householdSize} personnes.
+      Stock disponible : ${stockList}.
+      Régime : ${user.diet || 'Standard'}.
+      
       Réponds UNIQUEMENT en JSON.
     `;
 
@@ -127,8 +112,9 @@ export const generateRecipeWithGemini = async (stock: Product[], user: Partial<U
       }
     });
 
-    if (response.text) {
-      const data = JSON.parse(response.text);
+    const responseText = response.text;
+    if (responseText) {
+      const data = JSON.parse(responseText);
       return {
         id: Math.random().toString(36).substr(2, 9),
         ...data,
@@ -138,7 +124,7 @@ export const generateRecipeWithGemini = async (stock: Product[], user: Partial<U
     }
     return null;
   } catch (error) {
-    console.error("Gemini API error:", error);
+    console.error("Gemini Recipe API error:", error);
     return null;
   }
 };
@@ -157,17 +143,20 @@ export interface ScannedReceipt {
   }>;
 }
 
+/**
+ * Analyse un ticket de caisse avec Gemini Vision
+ */
 export const parseReceiptWithGemini = async (imageBase64: string, user?: Partial<User>): Promise<ScannedReceipt | null> => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    let cleanBase64 = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+    let data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: {
         parts: [
-          { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } },
-          { text: "Analyse ce ticket de caisse. Extrais magasin, date (YYYY-MM-DD), total, et items avec catégorie, prix, quantité, unité." }
+          { inlineData: { mimeType: 'image/jpeg', data } },
+          { text: "Extrais les données de ce ticket de caisse en JSON. Inclus le magasin, la date, le total et la liste des articles avec prix, quantité et catégorie." }
         ]
       },
       config: {
@@ -187,8 +176,7 @@ export const parseReceiptWithGemini = async (imageBase64: string, user?: Partial
                   quantity: { type: Type.NUMBER },
                   unit: { type: Type.STRING },
                   category: { type: Type.STRING },
-                  price: { type: Type.NUMBER },
-                  warning: { type: Type.STRING, nullable: true }
+                  price: { type: Type.NUMBER }
                 }
               }
             }
@@ -197,25 +185,29 @@ export const parseReceiptWithGemini = async (imageBase64: string, user?: Partial
       }
     });
 
-    if (response.text) return JSON.parse(response.text);
+    const responseText = response.text;
+    if (responseText) return JSON.parse(responseText);
     return null;
   } catch (error) {
-    console.error("Gemini Vision API error:", error);
+    console.error("Gemini Vision error:", error);
     return null;
   }
 };
 
-export const identifyProductWithVision = async (imageBase64: string, user?: Partial<User>): Promise<Partial<Product> & { warning?: string } | null> => {
+/**
+ * Identifie un produit à partir d'une photo
+ */
+export const identifyProductWithVision = async (imageBase64: string, user?: Partial<User>): Promise<any | null> => {
     try {
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        let cleanBase64 = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+        let data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
 
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: {
                 parts: [
-                    { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } },
-                    { text: "Identifie cet aliment. Nom, quantité estimée, unité, catégorie." }
+                    { inlineData: { mimeType: 'image/jpeg', data } },
+                    { text: "Identifie cet aliment. Nom, quantité estimée, unité et catégorie." }
                 ]
             },
             config: {
@@ -226,14 +218,14 @@ export const identifyProductWithVision = async (imageBase64: string, user?: Part
                         name: { type: Type.STRING },
                         quantity: { type: Type.NUMBER },
                         unit: { type: Type.STRING },
-                        category: { type: Type.STRING },
-                        warning: { type: Type.STRING, nullable: true }
+                        category: { type: Type.STRING }
                     }
                 }
             }
         });
 
-        if (response.text) return JSON.parse(response.text);
+        const responseText = response.text;
+        if (responseText) return JSON.parse(responseText);
         return null;
     } catch (e) {
         console.error("Gemini Product ID error", e);
@@ -241,19 +233,15 @@ export const identifyProductWithVision = async (imageBase64: string, user?: Part
     }
 }
 
-export interface NLUAction {
-  action: 'add' | 'remove' | 'update';
-  item: string;
-  quantity: number;
-  unit?: string;
-}
-
-export const processNaturalLanguageCommand = async (command: string): Promise<NLUAction[] | null> => {
+/**
+ * Traite une commande en langage naturel
+ */
+export const processNaturalLanguageCommand = async (command: string): Promise<any[] | null> => {
     try {
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: `Analyse cette commande : "${command}". Retourne une liste d'actions (add, remove, update) avec item, quantity, unit.`,
+            contents: `Analyse cette commande : "${command}". Retourne une liste d'actions JSON (add, remove, update) avec l'item et la quantité.`,
             config: {
                 responseMimeType: "application/json",
                 responseSchema: {
@@ -272,7 +260,8 @@ export const processNaturalLanguageCommand = async (command: string): Promise<NL
             }
         });
 
-        if (response.text) return JSON.parse(response.text);
+        const responseText = response.text;
+        if (responseText) return JSON.parse(responseText);
         return null;
     } catch (error) {
         console.error("Gemini NLU error:", error);
@@ -280,15 +269,18 @@ export const processNaturalLanguageCommand = async (command: string): Promise<NL
     }
 }
 
+/**
+ * Génère des conseils budgétaires
+ */
 export const getBudgetAdvice = async (total: number, trend: number, topCategory: string): Promise<string> => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Conseil budget court (25 mots). Total: ${total}€. Tendance: ${trend}%. Top: ${topCategory}.`,
+      contents: `Donne un conseil budgétaire court (20 mots max). Dépense : ${total}€. Tendance : ${trend}%. Catégorie : ${topCategory}.`,
     });
-    return response.text || "Continuez vos efforts !";
+    return response.text || "Suivez vos dépenses pour optimiser votre budget.";
   } catch (error) {
-    return "Analyse indisponible.";
+    return "Conseil budgétaire indisponible.";
   }
 };

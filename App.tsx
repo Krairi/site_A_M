@@ -1,4 +1,3 @@
-
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -24,12 +23,21 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode, adminOnly?: boolean 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     const checkSession = async () => {
-      const u = await supabase.getUser();
-      setUser(u);
-      setLoading(false);
+      try {
+        const u = await supabase.getUser();
+        if (isMounted) {
+          setUser(u);
+          setLoading(false);
+        }
+      } catch (e) {
+        console.error("Auth check failed", e);
+        if (isMounted) setLoading(false);
+      }
     };
     checkSession();
+    return () => { isMounted = false; };
   }, []);
 
   if (loading) return (
@@ -38,9 +46,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode, adminOnly?: boolean 
     </div>
   );
 
-  if (!user) return <Navigate to="/auth" />;
+  if (!user) return <Navigate to="/auth" replace />;
 
-  // Vérification de suspension
   if (user.accountStatus === 'suspended') {
       return (
         <div className="min-h-screen flex items-center justify-center bg-red-50 p-6">
@@ -54,7 +61,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode, adminOnly?: boolean 
       );
   }
 
-  // Vérification Admin stricte (admin@givd.com)
   if (adminOnly && !isSuperAdmin(user)) {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
@@ -94,7 +100,7 @@ function App() {
           <Route path="/audit" element={<ProtectedRoute adminOnly><Audit /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
           
-          <Route path="*" element={<Navigate to="/" />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </HashRouter>
     </LanguageProvider>
